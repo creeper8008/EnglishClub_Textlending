@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英語サークル｜教科書貸出管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --navy:#1a2744;--navy-light:#243460;--navy-pale:#e8ecf5;
+  --cream:#fafaf7;--white:#ffffff;
+  --teal-bg:#e1f5ee;--teal-text:#0f6e56;--teal-bd:#1d9e75;
+  --amber-bg:#faeeda;--amber-text:#854f0b;--amber-bd:#ba7517;
+  --red-bg:#fde8e8;--red-text:#c0392b;--red-bd:#e74c3c;
+  --gray-lt:#f1efe8;--gray-mid:#d3d1c7;--gray-tx:#5f5e5a;
+  --gold:#c9a84c;
+  --sh:0 2px 12px rgba(26,39,68,.08);
+  --sh2:0 6px 24px rgba(26,39,68,.14);
+  --shm:0 24px 64px rgba(26,39,68,.25);
+  --r:12px;--rl:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP','DM Sans',sans-serif;background:var(--cream);color:var(--navy);min-height:100vh;}
+.hidden{display:none!important;}
+
+/* BUTTONS */
+.btn{padding:.6rem 1.2rem;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;border:none;transition:all .18s;font-family:'Noto Sans JP',sans-serif;letter-spacing:.02em;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.btn:disabled{opacity:.38;cursor:not-allowed;pointer-events:none;}
+.btn-navy{background:var(--navy);color:#fff;}.btn-navy:hover{background:var(--navy-light);}
+.btn-teal{background:var(--teal-bg);color:var(--teal-text);border:1px solid var(--teal-bd);}.btn-teal:hover{background:#c0e8d8;}
+.btn-ghost{background:var(--gray-lt);color:var(--gray-tx);}.btn-ghost:hover{background:var(--gray-mid);}
+.btn-danger{background:var(--red-bg);color:var(--red-text);border:1px solid var(--red-bd);}.btn-danger:hover{background:#fbd0d0;}
+.btn-lg{padding:.85rem 2rem;font-size:1rem;border-radius:10px;}
+.btn-full{width:100%;}
+
+/* LOADING */
+#screen-loading{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.sp{width:36px;height:36px;border:3px solid var(--gray-mid);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#screen-loading p{font-size:.85rem;color:var(--gray-tx);text-align:center;}
+
+/* LOGIN */
+#screen-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);padding:2rem;}
+.login-card{background:var(--white);border-radius:20px;padding:3rem 2.5rem;max-width:400px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.3);}
+.logo-login{font-family:'DM Serif Display',serif;font-size:1.7rem;color:var(--navy);}
+.logo-login span{color:var(--gold);}
+.login-sub{font-size:.75rem;color:var(--gray-tx);margin-bottom:2.5rem;letter-spacing:.1em;text-transform:uppercase;margin-top:.2rem;}
+.btn-google{background:var(--white);color:var(--navy);border:1.5px solid var(--gray-mid);padding:.8rem 1.5rem;border-radius:10px;font-size:.92rem;font-weight:500;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .18s;font-family:'Noto Sans JP',sans-serif;}
+.btn-google:hover{border-color:var(--navy);background:var(--cream);}
+.gi{width:20px;height:20px;flex-shrink:0;}
+.login-note{font-size:.72rem;color:var(--gray-tx);margin-top:1.25rem;line-height:1.7;}
+
+/* UNAUTHORIZED */
+#screen-unauthorized{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;}
+.unauth-card{background:var(--white);border-radius:var(--rl);padding:2.5rem;max-width:420px;width:100%;text-align:center;box-shadow:var(--sh);}
+.unauth-icon{font-size:2.8rem;margin-bottom:1rem;}
+.unauth-card h2{font-size:1.1rem;margin-bottom:.5rem;}
+.unauth-card p{font-size:.85rem;color:var(--gray-tx);margin-bottom:.75rem;line-height:1.7;}
+
+/* HEADER */
+header{background:var(--navy);position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.2);}
+.hdr{max-width:1100px;margin:0 auto;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;gap:1rem;}
+.logo{font-family:'DM Serif Display',serif;font-size:1.2rem;color:#fff;flex-shrink:0;}
+.logo span{color:var(--gold);}
+.hdr-mid{display:flex;gap:.75rem;align-items:center;}
+.sp-pill{font-size:.72rem;padding:4px 10px;border-radius:99px;font-weight:700;}
+.sp-pill.av{background:var(--teal-bg);color:var(--teal-text);}
+.sp-pill.bo{background:var(--amber-bg);color:var(--amber-text);}
+.hdr-right{display:flex;align-items:center;gap:.6rem;flex-shrink:0;}
+.user-chip{display:flex;align-items:center;gap:7px;}
+.uav{width:30px;height:30px;border-radius:50%;background:var(--navy-light);display:flex;align-items:center;justify-content:center;font-size:.78rem;color:var(--gold);font-weight:700;flex-shrink:0;overflow:hidden;}
+.uav img{width:100%;height:100%;object-fit:cover;}
+.unm{font-size:.77rem;color:rgba(255,255,255,.7);}
+.btn-hdr{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);padding:5px 12px;border-radius:7px;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .18s;font-family:'Noto Sans JP',sans-serif;}
+.btn-hdr:hover{background:rgba(255,255,255,.22);}
+.btn-hdr.gold{background:rgba(201,168,76,.18);border-color:rgba(201,168,76,.4);color:var(--gold);}
+.btn-hdr.gold:hover{background:rgba(201,168,76,.32);}
+
+/* PENDING BANNER */
+#pending-banner{background:linear-gradient(90deg,#7a3f0a,#ba7517);color:#fff;padding:.7rem 2rem;display:flex;align-items:center;justify-content:center;gap:1rem;font-size:.82rem;font-weight:500;flex-wrap:wrap;}
+.btn-bnr{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:5px 14px;border-radius:6px;font-size:.77rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;}
+.btn-bnr:hover{background:rgba(255,255,255,.3);}
+
+/* MAIN */
+main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
+.pg-label{font-size:.74rem;text-transform:uppercase;letter-spacing:.14em;color:var(--gray-tx);margin-bottom:.3rem;font-family:'DM Sans',sans-serif;}
+.pg-h1{font-family:'DM Serif Display',serif;font-size:1.7rem;color:var(--navy);margin-bottom:2rem;font-weight:400;}
+
+/* BOOKS GRID */
+.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.25rem;}
+.book-card{background:var(--white);border-radius:var(--r);padding:1.25rem;box-shadow:var(--sh);border:1px solid rgba(26,39,68,.06);transition:box-shadow .2s,transform .2s;display:flex;flex-direction:column;gap:.7rem;}
+.book-card:hover{box-shadow:var(--sh2);transform:translateY(-2px);}
+.book-card.od{border-color:var(--red-bd);}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;}
+.bk-num{font-size:.68rem;font-weight:500;color:var(--gray-tx);letter-spacing:.08em;font-family:'DM Sans',sans-serif;padding-top:2px;flex-shrink:0;}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:.73rem;font-weight:700;flex-shrink:0;}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.badge.av{background:var(--teal-bg);color:var(--teal-text);border:1px solid var(--teal-bd);}.badge.av::before{background:var(--teal-text);}
+.badge.bo{background:var(--amber-bg);color:var(--amber-text);border:1px solid var(--amber-bd);}.badge.bo::before{background:var(--amber-text);}
+.badge.od{background:var(--red-bg);color:var(--red-text);border:1px solid var(--red-bd);}.badge.od::before{background:var(--red-text);}
+.bk-title{font-size:.93rem;font-weight:700;line-height:1.45;}
+.bk-sub{font-size:.77rem;color:var(--gray-tx);line-height:1.4;}
+.bi{border-radius:8px;padding:.6rem .85rem;font-size:.79rem;display:flex;flex-direction:column;gap:3px;}
+.bi.mine{background:var(--amber-bg);color:var(--amber-text);}
+.bi.other{background:var(--gray-lt);color:var(--gray-tx);}
+.bi.ov{background:var(--red-bg);color:var(--red-text);}
+.bi strong{font-weight:700;}
+.card-acts{display:flex;gap:.5rem;margin-top:auto;}
+.btn-card{flex:1;padding:.52rem;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;border:none;transition:all .18s;font-family:'Noto Sans JP',sans-serif;}
+.other-note{font-size:.72rem;color:var(--gray-tx);padding:.4rem;text-align:center;width:100%;}
+
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(26,39,68,.55);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:1rem;}
+.mo.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--rl);padding:2rem;width:100%;max-width:480px;box-shadow:var(--shm);animation:mIn .2s ease;max-height:90vh;overflow-y:auto;}
+@keyframes mIn{from{opacity:0;transform:scale(.95) translateY(8px);}to{opacity:1;transform:none;}}
+.modal h2{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--navy);margin-bottom:.2rem;font-weight:400;}
+.modal-sub{font-size:.82rem;color:var(--gray-tx);margin-bottom:1.5rem;line-height:1.6;}
+.modal-acts{display:flex;gap:.75rem;margin-top:1.5rem;}
+.fg{margin-bottom:1rem;}
+.fg label{display:block;font-size:.79rem;font-weight:700;color:var(--navy);margin-bottom:.35rem;}
+.fg input,.fg textarea{width:100%;padding:.65rem .85rem;border:1.5px solid var(--gray-mid);border-radius:8px;font-size:.9rem;font-family:'Noto Sans JP',sans-serif;color:var(--navy);background:var(--cream);transition:border-color .15s;outline:none;}
+.fg input:focus,.fg textarea:focus{border-color:var(--navy);}
+.fg input[readonly]{background:#e8e8e3;color:var(--gray-tx);}
+.fg textarea{min-height:110px;resize:vertical;line-height:1.65;}
+.fg-hint{font-size:.72rem;color:var(--gray-tx);margin-top:.25rem;}
+
+/* WELCOME */
+#mw .modal{max-width:540px;}
+.rules-box{background:var(--navy-pale);border-radius:10px;padding:1.1rem 1.4rem;margin:1rem 0;}
+.rules-box li{font-size:.875rem;line-height:1.7;color:var(--navy);list-style:none;padding:.3rem 0;border-bottom:1px solid rgba(26,39,68,.08);display:flex;gap:.75rem;align-items:baseline;}
+.rules-box li:last-child{border-bottom:none;}
+.rn{font-weight:700;color:var(--navy-light);flex-shrink:0;font-family:'DM Sans',sans-serif;font-size:.77rem;}
+
+/* RETURN SUCCESS */
+.sicon{text-align:center;font-size:2.6rem;margin-bottom:.75rem;}
+.nsteps{background:var(--gray-lt);border-radius:10px;padding:1rem 1.25rem;margin:1rem 0;font-size:.83rem;color:var(--navy);line-height:1.8;}
+.rpt-alert{background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:8px;padding:.75rem 1rem;font-size:.83rem;color:var(--amber-text);font-weight:600;display:flex;align-items:flex-start;gap:8px;line-height:1.5;}
+
+/* ADMIN PANEL */
+#panel-admin{position:fixed;top:0;right:-640px;width:min(600px,100vw);height:100vh;background:var(--white);box-shadow:-8px 0 40px rgba(26,39,68,.2);z-index:300;transition:right .3s ease;display:flex;flex-direction:column;overflow:hidden;}
+#panel-admin.open{right:0;}
+.adm-ov{display:none;position:fixed;inset:0;background:rgba(26,39,68,.4);z-index:299;backdrop-filter:blur(2px);}
+.adm-ov.open{display:block;}
+.adm-hd{background:var(--navy);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.adm-hd h2{font-family:'DM Serif Display',serif;color:var(--gold);font-size:1.1rem;font-weight:400;}
+.btn-x{background:rgba(255,255,255,.12);border:none;color:#fff;width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;}
+.btn-x:hover{background:rgba(255,255,255,.22);}
+.adm-tabs{display:flex;border-bottom:1px solid var(--gray-mid);background:var(--cream);flex-shrink:0;}
+.atab{flex:1;padding:.85rem .25rem;font-size:.77rem;font-weight:700;color:var(--gray-tx);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:'Noto Sans JP',sans-serif;}
+.atab.active{color:var(--navy);border-bottom-color:var(--navy);background:var(--white);}
+.adm-body{flex:1;overflow-y:auto;padding:1.25rem 1.5rem;}
+.asec{display:none;}.asec.active{display:block;}
+.asec-ttl{font-size:.77rem;font-weight:700;color:var(--navy);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.07em;}
+.user-list{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.25rem;}
+.user-row{display:flex;align-items:center;gap:.75rem;padding:.7rem .9rem;background:var(--gray-lt);border-radius:8px;}
+.ue{flex:1;color:var(--navy);font-weight:500;word-break:break-all;font-size:.79rem;}
+.urole{font-size:.67rem;padding:2px 8px;border-radius:99px;font-weight:700;flex-shrink:0;}
+.urole.admin{background:rgba(201,168,76,.2);color:#7a4f0a;}
+.urole.member{background:var(--navy-pale);color:var(--navy);}
+.add-box{background:var(--navy-pale);border-radius:10px;padding:1rem;}
+.add-box h4{font-size:.79rem;font-weight:700;margin-bottom:.75rem;}
+.add-row{display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap;}
+.add-row .fg{flex:1;min-width:160px;margin-bottom:0;}
+.add-row select{padding:.6rem .5rem;border:1.5px solid var(--gray-mid);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--cream);color:var(--navy);height:42px;cursor:pointer;}
+.bo-row{display:flex;flex-direction:column;gap:.3rem;padding:.85rem 1rem;background:var(--gray-lt);border-radius:8px;font-size:.82rem;margin-bottom:.5rem;}
+.bo-row.od{background:var(--red-bg);}
+.bo-book{font-weight:700;color:var(--navy);}
+.bo-meta{color:var(--gray-tx);display:flex;gap:1rem;flex-wrap:wrap;}
+.od .bo-meta{color:var(--red-text);font-weight:600;}
+.rp-row{padding:.85rem 1rem;background:var(--gray-lt);border-radius:8px;font-size:.82rem;margin-bottom:.5rem;}
+.rp-hd{display:flex;justify-content:space-between;margin-bottom:.3rem;gap:.5rem;align-items:flex-start;}
+.rp-book{font-weight:700;color:var(--navy);}
+.rp-dt{color:var(--gray-tx);font-size:.73rem;flex-shrink:0;}
+.rp-meta{color:var(--gray-tx);margin-bottom:.4rem;font-size:.77rem;}
+.rp-body{background:var(--white);border-radius:6px;padding:.5rem .75rem;color:var(--navy);line-height:1.65;font-size:.8rem;white-space:pre-wrap;}
+.empty{text-align:center;padding:2rem;color:var(--gray-tx);font-size:.83rem;}
+
+@media(max-width:640px){
+  main{padding:1.5rem 1rem;}
+  .hdr{padding:0 1rem;}
+  .logo{font-size:1rem;}
+  .unm{display:none;}
+  #pending-banner{font-size:.76rem;padding:.6rem 1rem;gap:.5rem;}
+  .hdr-mid{gap:.4rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="screen-loading"><div style="text-align:center"><div class="sp"></div><p>読み込み中...</p></div></div>
+
+<!-- LOGIN -->
+<div id="screen-login" class="hidden">
+  <div class="login-card">
+    <div class="logo-login">English<span>Circle</span></div>
+    <div class="login-sub">Textbook Lending System</div>
+    <button class="btn-google" onclick="signIn()">
+      <svg class="gi" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      学校用Googleアカウントでログイン
+    </button>
+    <p class="login-note">このシステムは英語サークル会員専用です。<br>登録されたアカウントのみアクセスできます。</p>
+  </div>
+</div>
+
+<!-- UNAUTHORIZED -->
+<div id="screen-unauthorized" class="hidden">
+  <div class="unauth-card">
+    <div class="unauth-icon">🚫</div>
+    <h2>アクセスできません</h2>
+    <p>このアカウントは登録されていません。<br>サークル担当者にお問い合わせください。</p>
+    <p id="unauth-email" style="font-size:.77rem;color:var(--gray-tx);margin-bottom:1.5rem;"></p>
+    <button class="btn btn-ghost btn-full" onclick="doSignOut()">別のアカウントでログイン</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+  <header>
+    <div class="hdr">
+      <div class="logo">English<span>Circle</span></div>
+      <div class="hdr-mid">
+        <span class="sp-pill av" id="stat-av">— 冊 貸出可</span>
+        <span class="sp-pill bo" id="stat-bo">— 冊 貸出中</span>
+      </div>
+      <div class="hdr-right">
+        <div class="user-chip">
+          <div class="uav" id="uav">?</div>
+          <span class="unm" id="unm"></span>
+        </div>
+        <button class="btn-hdr gold hidden" id="btn-admin" onclick="openAdmin()">⚙ 管理</button>
+        <button class="btn-hdr" onclick="doSignOut()">ログアウト</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="pending-banner" class="hidden">
+    <span>⚠️ 返却後の報告書が未提出です。提出するまで次の教科書は借りられません。</span>
+    <button class="btn-bnr" onclick="openReport()">📝 今すぐ報告書を書く</button>
+  </div>
+
+  <main>
+    <p class="pg-label">Textbook Lending</p>
+    <h1 class="pg-h1">教科書貸出管理</h1>
+    <div class="books-grid" id="books-grid"></div>
+  </main>
+
+  <!-- WELCOME -->
+  <div class="mo" id="mw">
+    <div class="modal" style="max-width:540px;">
+      <h2>📖 はじめに</h2>
+      <p class="modal-sub">教科書をお借りになる前に、以下のルールをご確認ください。</p>
+      <ul class="rules-box">
+        <li><span class="rn">1.</span><span>貸出期間は、フォーム提出日から起算して <strong>31日以内</strong> とします。</span></li>
+        <li><span class="rn">2.</span><span>一度に借りることができるのは <strong>1冊のみ</strong> です。</span></li>
+        <li><span class="rn">3.</span><span>貸出終了後、取り組んだ内容について <strong>報告書</strong> の記入・提出をお願いします（簡単で大丈夫です）。</span></li>
+        <li><span class="rn">4.</span><span>貸し出す教材は <strong>学校の備品</strong> です。書き込み等は不可です。返却いただけない場合、教材代をお支払いいただきますので、予めご了承ください。</span></li>
+      </ul>
+      <div class="modal-acts">
+        <button class="btn btn-navy btn-full btn-lg" onclick="closeWelcome()">確認しました</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BORROW -->
+  <div class="mo" id="mb">
+    <div class="modal">
+      <h2>📚 教科書を借りる</h2>
+      <p class="modal-sub" id="borrow-ttl"></p>
+      <div class="fg">
+        <label>ニックネーム（ページに表示されます）</label>
+        <input type="text" id="inp-nick" placeholder="例：たろう" maxlength="20">
+      </div>
+      <div class="fg">
+        <label>返却予定日</label>
+        <input type="date" id="inp-date">
+        <p class="fg-hint">今日から31日以内で選択してください</p>
+      </div>
+      <div class="modal-acts">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">キャンセル</button>
+        <button class="btn btn-navy" style="flex:1" onclick="confirmBorrow()">借りる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RETURN CONFIRM -->
+  <div class="mo" id="mr">
+    <div class="modal">
+      <h2>✅ 返却の確認</h2>
+      <p class="modal-sub" id="return-ttl"></p>
+      <p style="font-size:.88rem;color:var(--gray-tx);line-height:1.7;">教科書を返却済みとして記録します。<br>返却後は報告書の提出をお願いします。</p>
+      <div class="modal-acts">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">キャンセル</button>
+        <button class="btn btn-teal" style="flex:1" onclick="confirmReturn()">返却を確定する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RETURN SUCCESS -->
+  <div class="mo" id="mrs">
+    <div class="modal">
+      <div class="sicon">🎉</div>
+      <h2>返却が完了しました</h2>
+      <div class="nsteps">✅ ご返却ありがとうございました！<br>教科書を元の棚に戻したら、報告書を提出してください。</div>
+      <div class="rpt-alert">📝 報告書作成のタスクが追加されました。提出するまで次の教科書は借りられません。</div>
+      <div class="modal-acts">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">あとで書く</button>
+        <button class="btn btn-navy" style="flex:1" onclick="closeModals();openReport();">今すぐ書く</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORT -->
+  <div class="mo" id="mrp">
+    <div class="modal">
+      <h2>📝 報告書の提出</h2>
+      <p class="modal-sub">簡単で構いませんので、ご記入ください。</p>
+      <div class="fg">
+        <label>教科書名</label>
+        <input type="text" id="rp-book" readonly>
+      </div>
+      <div class="fg">
+        <label>取り組んだページ数</label>
+        <input type="text" id="rp-pages" placeholder="例：Unit 1〜3（約45ページ）">
+      </div>
+      <div class="fg">
+        <label>学習内容と感想</label>
+        <textarea id="rp-content" placeholder="取り組んだ内容や感想を自由にご記入ください。"></textarea>
+      </div>
+      <div class="modal-acts">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">あとで書く</button>
+        <button class="btn btn-navy" style="flex:1" onclick="submitReport()">提出する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="adm-ov" id="adm-ov" onclick="closeAdmin()"></div>
+  <div id="panel-admin">
+    <div class="adm-hd">
+      <h2>⚙ 管理パネル</h2>
+      <button class="btn-x" onclick="closeAdmin()">✕</button>
+    </div>
+    <div class="adm-tabs">
+      <div class="atab active" onclick="swTab(this,'users')">👥 ユーザー</div>
+      <div class="atab" onclick="swTab(this,'borrows')">📚 貸出状況</div>
+      <div class="atab" onclick="swTab(this,'reports')">📝 報告書</div>
+    </div>
+    <div class="adm-body">
+      <div class="asec active" id="asec-users">
+        <div class="asec-ttl">登録ユーザー</div>
+        <div class="user-list" id="adm-users"></div>
+        <div class="add-box">
+          <h4>➕ ユーザーを追加</h4>
+          <div class="add-row">
+            <div class="fg"><label>メールアドレス</label>
+              <input type="email" id="new-email" placeholder="example@school.jp">
+            </div>
+            <select id="new-role" style="align-self:flex-end;">
+              <option value="member">メンバー</option>
+              <option value="admin">管理者</option>
+            </select>
+            <button class="btn btn-navy" style="align-self:flex-end;" onclick="addUser()">追加</button>
+          </div>
+        </div>
+      </div>
+      <div class="asec" id="asec-borrows">
+        <div class="asec-ttl">現在の貸出状況</div>
+        <div id="adm-borrows"></div>
+      </div>
+      <div class="asec" id="asec-reports">
+        <div class="asec-ttl">提出済み報告書</div>
+        <div id="adm-reports"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// =====================================================
+// 🔧 Firebase 設定 — ここを書き換えてください
+// =====================================================
+</script>
+
+<script src="config.js"></script>
+
+<script>
+// =====================================================
+
+const BOOKS = [
+  {title:"公式TOEIC Listening & Reading 問題集 1",sub:"Educational Testing Service 著"},
+  {title:"公式TOEIC Listening & Reading 問題集 2",sub:"Educational Testing Service 著"},
+  {title:"公式TOEIC Listening & Reading 問題集 3",sub:"Educational Testing Service 著"},
+  {title:"公式TOEIC Listening & Reading 問題集 4",sub:"Educational Testing Service 著"},
+  {title:"金のフレーズ — 出る単特急",sub:"TEX加藤 著 / TOEIC L&R TEST"},
+  {title:"銀のフレーズ — 出る単特急",sub:"TEX加藤 著 / TOEIC L&R TEST"},
+  {title:"金の文法 — 出る問特急",sub:"TEX加藤 著 / TOEIC L&R TEST"},
+  {title:"文法特急1 — 朝のカフェで鍛える600問",sub:"花田徹也 著 / 新TOEIC TEST"},
+  {title:"文法特急2 — 急所アタック問題集",sub:"花田徹也 著 / 1駅1題 新TOEIC TEST"},
+  {title:"TOEIC L&R TEST 英単語 Stock 3000",sub:"プレイス 編"}
+];
+
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(), db=firebase.database();
+let me=null,myRole=null,books={},pending=null,curId=null,retTitle='';
+
+function ekey(e){return e.replace(/\./g,',').replace(/@/g,'_at_');}
+function dkey(k){return k.replace(/_at_/g,'@').replace(/,/g,'.');}
+function fmt(s){if(!s)return'—';const[y,m,d]=s.split('-');return`${y}年${m}月${d}日`;}
+function today(){return new Date().toISOString().split('T')[0];}
+function maxD(){const d=new Date();d.setDate(d.getDate()+31);return d.toISOString().split('T')[0];}
+function isOD(d){return d&&d<today();}
+function esc(s){return(s||'').replace(/'/g,"\\'");}
+function show(id){
+  ['screen-loading','screen-login','screen-unauthorized','app'].forEach(x=>
+    document.getElementById(x).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+auth.onAuthStateChanged(async user=>{
+  if(!user){show('screen-login');return;}
+  me=user;
+  const k=ekey(user.email);
+  let snap=await db.ref('allowedUsers/'+k).once('value');
+  if(!snap.exists()){
+    const all=await db.ref('allowedUsers').once('value');
+    if(!all.exists()){
+      await db.ref('allowedUsers/'+k).set({role:'admin',addedAt:Date.now()});
+      myRole='admin';
+    } else {
+      document.getElementById('unauth-email').textContent=user.email;
+      show('screen-unauthorized');return;
+    }
+  } else { myRole=snap.val().role||'member'; }
+
+  const bs=await db.ref('books').once('value');
+  if(!bs.exists()){
+    const init={};
+    BOOKS.forEach((b,i)=>{ init['book_'+(i+1)]={...b,status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null}; });
+    await db.ref('books').set(init);
+  }
+
+  show('app');
+  renderUser();
+  startListeners();
+  if(!sessionStorage.getItem('welcomed')) document.getElementById('mw').classList.add('open');
+});
+
+function renderUser(){
+  const av=document.getElementById('uav');
+  if(me.photoURL) av.innerHTML=`<img src="${me.photoURL}" alt="">`;
+  else av.textContent=(me.displayName||me.email||'?')[0].toUpperCase();
+  document.getElementById('unm').textContent=me.displayName||me.email.split('@')[0];
+  if(myRole==='admin') document.getElementById('btn-admin').classList.remove('hidden');
+}
+
+function startListeners(){
+  db.ref('books').on('value',snap=>{
+    books=snap.val()||{};
+    renderBooks(); renderStats(); renderAdmBorrows();
+  });
+  db.ref('pendingReports/'+ekey(me.email)).on('value',snap=>{
+    pending=snap.val();
+    document.getElementById('pending-banner').classList.toggle('hidden',!pending);
+    renderBooks();
+  });
+  if(myRole==='admin'){
+    db.ref('allowedUsers').on('value',snap=>renderAdmUsers(snap.val()||{}));
+    db.ref('reports').on('value',snap=>renderAdmReports(snap.val()||{}));
+  }
+}
+
+function signIn(){
+  const p=new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(p).catch(e=>alert('ログイン失敗: '+e.message));
+}
+function doSignOut(){auth.signOut();}
+function closeWelcome(){
+  document.getElementById('mw').classList.remove('open');
+  sessionStorage.setItem('welcomed','1');
+}
+
+function renderBooks(){
+  const g=document.getElementById('books-grid');g.innerHTML='';
+  Object.entries(books).forEach(([id,b],i)=>{
+    const bw=b.status==='borrowed';
+    const mine=bw&&b.borrowerEmail===me.email;
+    const od=bw&&isOD(b.returnDate);
+    const canBorrow=!bw&&!pending;
+    const canReturn=mine||(myRole==='admin'&&bw);
+    let bdg='av',lbl='貸出可';
+    if(od){bdg='od';lbl='延滞中';}else if(bw){bdg='bo';lbl='貸出中';}
+    let info='';
+    if(bw){
+      const cls=mine?'mine':od?'ov':'other';
+      const who=mine?'<strong>あなた</strong>が借りています':`<strong>${b.borrowerNickname||'—'}</strong>が借りています`;
+      const due=`<strong>返却日：</strong>${fmt(b.returnDate)}${od?' ⚠️ 延滞中':''}`;
+      info=`<div class="bi ${cls}"><div>${who}</div><div>${due}</div></div>`;
+    }
+    let act='';
+    if(!bw) act=`<button class="btn btn-card btn-navy" onclick="openBorrow('${id}','${esc(b.title)}')" ${canBorrow?'':'disabled'}>借りる</button>`;
+    else if(canReturn) act=`<button class="btn btn-card btn-teal" onclick="openReturn('${id}','${esc(b.title)}')">返却する</button>`;
+    else act=`<span class="other-note">他の方が借りています</span>`;
+    const card=document.createElement('div');
+    card.className='book-card'+(od?' od':'');
+    card.innerHTML=`
+      <div class="card-top">
+        <span class="bk-num">No.${String(i+1).padStart(2,'0')}</span>
+        <span class="badge ${bdg}">${lbl}</span>
+      </div>
+      <div><div class="bk-title">${b.title}</div><div class="bk-sub">${b.sub}</div></div>
+      ${info}
+      <div class="card-acts">${act}</div>`;
+    g.appendChild(card);
+  });
+}
+
+function renderStats(){
+  let av=0,bo=0;
+  Object.values(books).forEach(b=>b.status==='borrowed'?bo++:av++);
+  document.getElementById('stat-av').textContent=`${av} 冊 貸出可`;
+  document.getElementById('stat-bo').textContent=`${bo} 冊 貸出中`;
+}
+
+function openBorrow(id,title){
+  if(pending){alert('報告書を提出してから借りてください。');return;}
+  if(Object.values(books).some(b=>b.status==='borrowed'&&b.borrowerEmail===me.email)){
+    alert('すでに1冊借りています。返却してから借りてください。');return;}
+  curId=id;
+  document.getElementById('borrow-ttl').textContent=title;
+  document.getElementById('inp-nick').value='';
+  document.getElementById('inp-date').value='';
+  document.getElementById('inp-date').min=today();
+  document.getElementById('inp-date').max=maxD();
+  document.getElementById('mb').classList.add('open');
+}
+function confirmBorrow(){
+  const nick=document.getElementById('inp-nick').value.trim();
+  const date=document.getElementById('inp-date').value;
+  if(!nick){alert('ニックネームを入力してください。');return;}
+  if(!date){alert('返却予定日を選択してください。');return;}
+  if(date>maxD()){alert('返却日は31日以内で選択してください。');return;}
+  db.ref('books/'+curId).update({status:'borrowed',borrowerEmail:me.email,borrowerNickname:nick,borrowDate:today(),returnDate:date});
+  closeModals();
+}
+
+function openReturn(id,title){
+  curId=id;retTitle=title;
+  document.getElementById('return-ttl').textContent=title;
+  document.getElementById('mr').classList.add('open');
+}
+function confirmReturn(){
+  const k=ekey(me.email);
+  db.ref('pendingReports/'+k).set({bookId:curId,bookTitle:retTitle,borrowDate:books[curId]?.borrowDate||null,returnDate:today()});
+  db.ref('books/'+curId).update({status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null});
+  closeModals();
+  document.getElementById('mrs').classList.add('open');
+}
+
+function openReport(){
+  if(!pending)return;
+  document.getElementById('rp-book').value=pending.bookTitle||'';
+  document.getElementById('rp-pages').value='';
+  document.getElementById('rp-content').value='';
+  document.getElementById('mrp').classList.add('open');
+}
+function submitReport(){
+  const pages=document.getElementById('rp-pages').value.trim();
+  const content=document.getElementById('rp-content').value.trim();
+  if(!pages){alert('取り組んだページ数を入力してください。');return;}
+  if(!content){alert('学習内容と感想を入力してください。');return;}
+  const k=ekey(me.email);
+  db.ref('reports/report_'+Date.now()).set({
+    bookId:pending.bookId,bookTitle:pending.bookTitle,
+    borrowerEmail:me.email,borrowDate:pending.borrowDate,returnDate:pending.returnDate,
+    pages,content,submittedAt:today()
+  });
+  db.ref('pendingReports/'+k).remove();
+  closeModals();
+  alert('✅ 報告書を提出しました。ありがとうございました！');
+}
+
+function closeModals(){
+  document.querySelectorAll('.mo').forEach(el=>el.classList.remove('open'));
+  curId=null;
+}
+document.querySelectorAll('.mo:not(#mw)').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)closeModals();});
+});
+
+function openAdmin(){
+  renderAdmBorrows();
+  document.getElementById('panel-admin').classList.add('open');
+  document.getElementById('adm-ov').classList.add('open');
+}
+function closeAdmin(){
+  document.getElementById('panel-admin').classList.remove('open');
+  document.getElementById('adm-ov').classList.remove('open');
+}
+function swTab(el,tab){
+  document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.asec').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('asec-'+tab).classList.add('active');
+  if(tab==='borrows')renderAdmBorrows();
+}
+
+function renderAdmUsers(users){
+  const el=document.getElementById('adm-users');
+  const entries=Object.entries(users);
+  if(!entries.length){el.innerHTML='<p class="empty">登録ユーザーがいません</p>';return;}
+  el.innerHTML=entries.map(([k,v])=>{
+    const email=dkey(k),isSelf=email===me.email;
+    return `<div class="user-row">
+      <span class="ue">${email}</span>
+      <span class="urole ${v.role||'member'}">${v.role==='admin'?'管理者':'メンバー'}</span>
+      ${isSelf?'<span style="font-size:.72rem;color:var(--gray-tx);">（自分）</span>'
+        :`<button class="btn btn-danger" style="padding:4px 10px;font-size:.72rem;" onclick="removeUser('${k}')">削除</button>`}
+    </div>`;
+  }).join('');
+}
+function addUser(){
+  const email=document.getElementById('new-email').value.trim().toLowerCase();
+  const role=document.getElementById('new-role').value;
+  if(!email||!email.includes('@')){alert('有効なメールアドレスを入力してください。');return;}
+  db.ref('allowedUsers/'+ekey(email)).set({role,addedAt:Date.now()});
+  document.getElementById('new-email').value='';
+}
+function removeUser(k){
+  if(!confirm(`${dkey(k)} を削除しますか？`))return;
+  db.ref('allowedUsers/'+k).remove();
+}
+
+function renderAdmBorrows(){
+  const el=document.getElementById('adm-borrows');
+  if(!el)return;
+  const bw=Object.entries(books).filter(([,b])=>b.status==='borrowed');
+  if(!bw.length){el.innerHTML='<p class="empty">現在貸出中の教科書はありません</p>';return;}
+  el.innerHTML=bw.map(([id,b])=>{
+    const od=isOD(b.returnDate);
+    return `<div class="bo-row${od?' od':''}">
+      <div class="bo-book">${b.title}</div>
+      <div class="bo-meta">
+        <span>👤 ${b.borrowerNickname||'—'}</span>
+        <span>📅 ${fmt(b.returnDate)}${od?' ⚠️ 延滞':''}</span>
+      </div>
+      <div style="margin-top:.4rem;">
+        <button class="btn btn-danger" style="font-size:.74rem;padding:4px 12px;" onclick="forceReturn('${id}')">強制返却</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function forceReturn(id){
+  const b=books[id];if(!b)return;
+  if(!confirm(`「${b.title}」を強制返却しますか？`))return;
+  if(b.borrowerEmail)db.ref('pendingReports/'+ekey(b.borrowerEmail)).remove();
+  db.ref('books/'+id).update({status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null});
+}
+
+function renderAdmReports(reps){
+  const el=document.getElementById('adm-reports');
+  const entries=Object.entries(reps).reverse();
+  if(!entries.length){el.innerHTML='<p class="empty">報告書はまだありません</p>';return;}
+  el.innerHTML=entries.map(([,r])=>`
+    <div class="rp-row">
+      <div class="rp-hd"><span class="rp-book">${r.bookTitle}</span><span class="rp-dt">提出：${fmt(r.submittedAt)}</span></div>
+      <div class="rp-meta">📧 ${r.borrowerEmail} ｜ 📄 ${r.pages}</div>
+      <div class="rp-body">${r.content}</div>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>
