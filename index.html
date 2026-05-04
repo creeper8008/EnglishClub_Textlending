@@ -3,53 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>英語サークル｜教科書貸出管理</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<title>英語クラブ｜教科書貸出管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Outfit:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <style>
 :root{
-  --navy:#1a2744;--navy-light:#243460;--navy-pale:#e8ecf5;
+  /* ── 長岡大学レッド ── */
+  --red:#B5122B;--red-dark:#8C0D21;--red-light:#D41536;
+  --red-pale:#FDEAED;--red-mid:#F5C0C8;
+
   --cream:#fafaf7;--white:#ffffff;
   --teal-bg:#e1f5ee;--teal-text:#0f6e56;--teal-bd:#1d9e75;
   --amber-bg:#faeeda;--amber-text:#854f0b;--amber-bd:#ba7517;
-  --red-bg:#fde8e8;--red-text:#c0392b;--red-bd:#e74c3c;
+  --danger-bg:#fde8e8;--danger-text:#c0392b;--danger-bd:#e74c3c;
   --gray-lt:#f1efe8;--gray-mid:#d3d1c7;--gray-tx:#5f5e5a;
-  --gold:#c9a84c;
-  --sh:0 2px 12px rgba(26,39,68,.08);
-  --sh2:0 6px 24px rgba(26,39,68,.14);
-  --shm:0 24px 64px rgba(26,39,68,.25);
+  --gold:#e8b84b;
+
+  --sh:0 2px 12px rgba(181,18,43,.07);
+  --sh2:0 6px 24px rgba(181,18,43,.13);
+  --shm:0 24px 64px rgba(100,0,15,.22);
   --r:12px;--rl:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Noto Sans JP','DM Sans',sans-serif;background:var(--cream);color:var(--navy);min-height:100vh;}
+body{font-family:'Noto Sans JP','DM Sans',sans-serif;background:var(--cream);color:#1a0508;min-height:100vh;}
 .hidden{display:none!important;}
 
 /* BUTTONS */
 .btn{padding:.6rem 1.2rem;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;border:none;transition:all .18s;font-family:'Noto Sans JP',sans-serif;letter-spacing:.02em;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
 .btn:disabled{opacity:.38;cursor:not-allowed;pointer-events:none;}
-.btn-navy{background:var(--navy);color:#fff;}.btn-navy:hover{background:var(--navy-light);}
+.btn-primary{background:var(--red);color:#fff;}.btn-primary:hover{background:var(--red-dark);}
 .btn-teal{background:var(--teal-bg);color:var(--teal-text);border:1px solid var(--teal-bd);}.btn-teal:hover{background:#c0e8d8;}
 .btn-ghost{background:var(--gray-lt);color:var(--gray-tx);}.btn-ghost:hover{background:var(--gray-mid);}
-.btn-danger{background:var(--red-bg);color:var(--red-text);border:1px solid var(--red-bd);}.btn-danger:hover{background:#fbd0d0;}
+.btn-danger{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-bd);}.btn-danger:hover{background:#fbd0d0;}
 .btn-lg{padding:.85rem 2rem;font-size:1rem;border-radius:10px;}
 .btn-full{width:100%;}
 
 /* LOADING */
 #screen-loading{min-height:100vh;display:flex;align-items:center;justify-content:center;}
-.sp{width:36px;height:36px;border:3px solid var(--gray-mid);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem;}
+.sp{width:36px;height:36px;border:3px solid var(--gray-mid);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem;}
 @keyframes spin{to{transform:rotate(360deg);}}
 #screen-loading p{font-size:.85rem;color:var(--gray-tx);text-align:center;}
 
 /* LOGIN */
-#screen-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);padding:2rem;}
+#screen-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--red-dark) 0%,var(--red) 60%,#e8354f 100%);padding:2rem;}
 .login-card{background:var(--white);border-radius:20px;padding:3rem 2.5rem;max-width:400px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.3);}
-.logo-login{font-family:'DM Serif Display',serif;font-size:1.7rem;color:var(--navy);}
-.logo-login span{color:var(--gold);}
-.login-sub{font-size:.75rem;color:var(--gray-tx);margin-bottom:2.5rem;letter-spacing:.1em;text-transform:uppercase;margin-top:.2rem;}
-.btn-google{background:var(--white);color:var(--navy);border:1.5px solid var(--gray-mid);padding:.8rem 1.5rem;border-radius:10px;font-size:.92rem;font-weight:500;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .18s;font-family:'Noto Sans JP',sans-serif;}
-.btn-google:hover{border-color:var(--navy);background:var(--cream);}
+.logo-login{font-family:'Outfit',sans-serif;font-size:1.85rem;font-weight:800;color:var(--red);letter-spacing:-.02em;}
+.logo-login span{color:var(--red-dark);}
+.login-sub{font-size:.73rem;color:var(--gray-tx);margin-bottom:2.5rem;letter-spacing:.12em;text-transform:uppercase;margin-top:.25rem;}
+.btn-google{background:var(--white);color:#1a0508;border:1.5px solid var(--gray-mid);padding:.8rem 1.5rem;border-radius:10px;font-size:.92rem;font-weight:500;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .18s;font-family:'Noto Sans JP',sans-serif;}
+.btn-google:hover{border-color:var(--red);background:var(--red-pale);}
 .gi{width:20px;height:20px;flex-shrink:0;}
 .login-note{font-size:.72rem;color:var(--gray-tx);margin-top:1.25rem;line-height:1.7;}
 
@@ -61,9 +65,9 @@ body{font-family:'Noto Sans JP','DM Sans',sans-serif;background:var(--cream);col
 .unauth-card p{font-size:.85rem;color:var(--gray-tx);margin-bottom:.75rem;line-height:1.7;}
 
 /* HEADER */
-header{background:var(--navy);position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.2);}
+header{background:var(--red-dark);position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(100,0,15,.3);}
 .hdr{max-width:1100px;margin:0 auto;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;gap:1rem;}
-.logo{font-family:'DM Serif Display',serif;font-size:1.2rem;color:#fff;flex-shrink:0;}
+.logo{font-family:'Outfit',sans-serif;font-size:1.15rem;font-weight:800;color:#fff;flex-shrink:0;letter-spacing:-.01em;}
 .logo span{color:var(--gold);}
 .hdr-mid{display:flex;gap:.75rem;align-items:center;}
 .sp-pill{font-size:.72rem;padding:4px 10px;border-radius:99px;font-weight:700;}
@@ -71,13 +75,13 @@ header{background:var(--navy);position:sticky;top:0;z-index:100;box-shadow:0 2px
 .sp-pill.bo{background:var(--amber-bg);color:var(--amber-text);}
 .hdr-right{display:flex;align-items:center;gap:.6rem;flex-shrink:0;}
 .user-chip{display:flex;align-items:center;gap:7px;}
-.uav{width:30px;height:30px;border-radius:50%;background:var(--navy-light);display:flex;align-items:center;justify-content:center;font-size:.78rem;color:var(--gold);font-weight:700;flex-shrink:0;overflow:hidden;}
+.uav{width:30px;height:30px;border-radius:50%;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#fff;font-weight:700;flex-shrink:0;overflow:hidden;}
 .uav img{width:100%;height:100%;object-fit:cover;}
-.unm{font-size:.77rem;color:rgba(255,255,255,.7);}
-.btn-hdr{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);padding:5px 12px;border-radius:7px;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .18s;font-family:'Noto Sans JP',sans-serif;}
-.btn-hdr:hover{background:rgba(255,255,255,.22);}
-.btn-hdr.gold{background:rgba(201,168,76,.18);border-color:rgba(201,168,76,.4);color:var(--gold);}
-.btn-hdr.gold:hover{background:rgba(201,168,76,.32);}
+.unm{font-size:.77rem;color:rgba(255,255,255,.75);}
+.btn-hdr{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.22);padding:5px 12px;border-radius:7px;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .18s;font-family:'Noto Sans JP',sans-serif;}
+.btn-hdr:hover{background:rgba(255,255,255,.24);}
+.btn-hdr.gold{background:rgba(232,184,75,.18);border-color:rgba(232,184,75,.45);color:var(--gold);}
+.btn-hdr.gold:hover{background:rgba(232,184,75,.32);}
 
 /* PENDING BANNER */
 #pending-banner{background:linear-gradient(90deg,#7a3f0a,#ba7517);color:#fff;padding:.7rem 2rem;display:flex;align-items:center;justify-content:center;gap:1rem;font-size:.82rem;font-weight:500;flex-wrap:wrap;}
@@ -86,97 +90,113 @@ header{background:var(--navy);position:sticky;top:0;z-index:100;box-shadow:0 2px
 
 /* MAIN */
 main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
-.pg-label{font-size:.74rem;text-transform:uppercase;letter-spacing:.14em;color:var(--gray-tx);margin-bottom:.3rem;font-family:'DM Sans',sans-serif;}
-.pg-h1{font-family:'DM Serif Display',serif;font-size:1.7rem;color:var(--navy);margin-bottom:2rem;font-weight:400;}
+.pg-label{font-size:.74rem;text-transform:uppercase;letter-spacing:.14em;color:var(--gray-tx);margin-bottom:.4rem;font-family:'DM Sans',sans-serif;}
+/* ③ 明朝体→Outfitサンセリフに変更 */
+.pg-h1{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;color:var(--red-dark);margin-bottom:2rem;letter-spacing:-.02em;}
 
 /* BOOKS GRID */
 .books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.25rem;}
-.book-card{background:var(--white);border-radius:var(--r);padding:1.25rem;box-shadow:var(--sh);border:1px solid rgba(26,39,68,.06);transition:box-shadow .2s,transform .2s;display:flex;flex-direction:column;gap:.7rem;}
+.book-card{background:var(--white);border-radius:var(--r);padding:1.25rem;box-shadow:var(--sh);border:1px solid rgba(181,18,43,.07);transition:box-shadow .2s,transform .2s;display:flex;flex-direction:column;gap:.7rem;}
 .book-card:hover{box-shadow:var(--sh2);transform:translateY(-2px);}
-.book-card.od{border-color:var(--red-bd);}
+.book-card.od{border-color:var(--danger-bd);}
 .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;}
-.bk-num{font-size:.68rem;font-weight:500;color:var(--gray-tx);letter-spacing:.08em;font-family:'DM Sans',sans-serif;padding-top:2px;flex-shrink:0;}
+.bk-num{font-size:.68rem;font-weight:600;color:var(--gray-tx);letter-spacing:.08em;font-family:'DM Sans',sans-serif;padding-top:2px;flex-shrink:0;}
 .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:.73rem;font-weight:700;flex-shrink:0;}
 .badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0;}
 .badge.av{background:var(--teal-bg);color:var(--teal-text);border:1px solid var(--teal-bd);}.badge.av::before{background:var(--teal-text);}
 .badge.bo{background:var(--amber-bg);color:var(--amber-text);border:1px solid var(--amber-bd);}.badge.bo::before{background:var(--amber-text);}
-.badge.od{background:var(--red-bg);color:var(--red-text);border:1px solid var(--red-bd);}.badge.od::before{background:var(--red-text);}
+.badge.od{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-bd);}.badge.od::before{background:var(--danger-text);}
 .bk-title{font-size:.93rem;font-weight:700;line-height:1.45;}
 .bk-sub{font-size:.77rem;color:var(--gray-tx);line-height:1.4;}
 .bi{border-radius:8px;padding:.6rem .85rem;font-size:.79rem;display:flex;flex-direction:column;gap:3px;}
 .bi.mine{background:var(--amber-bg);color:var(--amber-text);}
 .bi.other{background:var(--gray-lt);color:var(--gray-tx);}
-.bi.ov{background:var(--red-bg);color:var(--red-text);}
+.bi.ov{background:var(--danger-bg);color:var(--danger-text);}
 .bi strong{font-weight:700;}
 .card-acts{display:flex;gap:.5rem;margin-top:auto;}
 .btn-card{flex:1;padding:.52rem;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;border:none;transition:all .18s;font-family:'Noto Sans JP',sans-serif;}
 .other-note{font-size:.72rem;color:var(--gray-tx);padding:.4rem;text-align:center;width:100%;}
 
 /* MODAL */
-.mo{display:none;position:fixed;inset:0;background:rgba(26,39,68,.55);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:1rem;}
+.mo{display:none;position:fixed;inset:0;background:rgba(100,0,15,.5);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:1rem;}
 .mo.open{display:flex;}
 .modal{background:var(--white);border-radius:var(--rl);padding:2rem;width:100%;max-width:480px;box-shadow:var(--shm);animation:mIn .2s ease;max-height:90vh;overflow-y:auto;}
 @keyframes mIn{from{opacity:0;transform:scale(.95) translateY(8px);}to{opacity:1;transform:none;}}
-.modal h2{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--navy);margin-bottom:.2rem;font-weight:400;}
+.modal h2{font-family:'Outfit',sans-serif;font-size:1.35rem;font-weight:700;color:var(--red-dark);margin-bottom:.2rem;letter-spacing:-.01em;}
 .modal-sub{font-size:.82rem;color:var(--gray-tx);margin-bottom:1.5rem;line-height:1.6;}
 .modal-acts{display:flex;gap:.75rem;margin-top:1.5rem;}
 .fg{margin-bottom:1rem;}
-.fg label{display:block;font-size:.79rem;font-weight:700;color:var(--navy);margin-bottom:.35rem;}
-.fg input,.fg textarea{width:100%;padding:.65rem .85rem;border:1.5px solid var(--gray-mid);border-radius:8px;font-size:.9rem;font-family:'Noto Sans JP',sans-serif;color:var(--navy);background:var(--cream);transition:border-color .15s;outline:none;}
-.fg input:focus,.fg textarea:focus{border-color:var(--navy);}
+.fg label{display:block;font-size:.79rem;font-weight:700;color:#1a0508;margin-bottom:.35rem;}
+.fg input,.fg textarea{width:100%;padding:.65rem .85rem;border:1.5px solid var(--gray-mid);border-radius:8px;font-size:.9rem;font-family:'Noto Sans JP',sans-serif;color:#1a0508;background:var(--cream);transition:border-color .15s;outline:none;}
+.fg input:focus,.fg textarea:focus{border-color:var(--red);}
 .fg input[readonly]{background:#e8e8e3;color:var(--gray-tx);}
 .fg textarea{min-height:110px;resize:vertical;line-height:1.65;}
 .fg-hint{font-size:.72rem;color:var(--gray-tx);margin-top:.25rem;}
 
 /* WELCOME */
 #mw .modal{max-width:540px;}
-.rules-box{background:var(--navy-pale);border-radius:10px;padding:1.1rem 1.4rem;margin:1rem 0;}
-.rules-box li{font-size:.875rem;line-height:1.7;color:var(--navy);list-style:none;padding:.3rem 0;border-bottom:1px solid rgba(26,39,68,.08);display:flex;gap:.75rem;align-items:baseline;}
+.rules-box{background:var(--red-pale);border-radius:10px;padding:1.1rem 1.4rem;margin:1rem 0;}
+.rules-box li{font-size:.875rem;line-height:1.7;color:#1a0508;list-style:none;padding:.3rem 0;border-bottom:1px solid rgba(181,18,43,.1);display:flex;gap:.75rem;align-items:baseline;}
 .rules-box li:last-child{border-bottom:none;}
-.rn{font-weight:700;color:var(--navy-light);flex-shrink:0;font-family:'DM Sans',sans-serif;font-size:.77rem;}
+.rn{font-weight:700;color:var(--red);flex-shrink:0;font-family:'DM Sans',sans-serif;font-size:.77rem;}
 
 /* RETURN SUCCESS */
 .sicon{text-align:center;font-size:2.6rem;margin-bottom:.75rem;}
-.nsteps{background:var(--gray-lt);border-radius:10px;padding:1rem 1.25rem;margin:1rem 0;font-size:.83rem;color:var(--navy);line-height:1.8;}
+.nsteps{background:var(--gray-lt);border-radius:10px;padding:1rem 1.25rem;margin:1rem 0;font-size:.83rem;color:#1a0508;line-height:1.8;}
 .rpt-alert{background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:8px;padding:.75rem 1rem;font-size:.83rem;color:var(--amber-text);font-weight:600;display:flex;align-items:flex-start;gap:8px;line-height:1.5;}
 
 /* ADMIN PANEL */
-#panel-admin{position:fixed;top:0;right:-640px;width:min(600px,100vw);height:100vh;background:var(--white);box-shadow:-8px 0 40px rgba(26,39,68,.2);z-index:300;transition:right .3s ease;display:flex;flex-direction:column;overflow:hidden;}
+#panel-admin{position:fixed;top:0;right:-640px;width:min(600px,100vw);height:100vh;background:var(--white);box-shadow:-8px 0 40px rgba(100,0,15,.18);z-index:300;transition:right .3s ease;display:flex;flex-direction:column;overflow:hidden;}
 #panel-admin.open{right:0;}
-.adm-ov{display:none;position:fixed;inset:0;background:rgba(26,39,68,.4);z-index:299;backdrop-filter:blur(2px);}
+.adm-ov{display:none;position:fixed;inset:0;background:rgba(100,0,15,.35);z-index:299;backdrop-filter:blur(2px);}
 .adm-ov.open{display:block;}
-.adm-hd{background:var(--navy);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.adm-hd h2{font-family:'DM Serif Display',serif;color:var(--gold);font-size:1.1rem;font-weight:400;}
+.adm-hd{background:var(--red-dark);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.adm-hd h2{font-family:'Outfit',sans-serif;color:var(--gold);font-size:1.1rem;font-weight:700;letter-spacing:-.01em;}
 .btn-x{background:rgba(255,255,255,.12);border:none;color:#fff;width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;}
 .btn-x:hover{background:rgba(255,255,255,.22);}
-.adm-tabs{display:flex;border-bottom:1px solid var(--gray-mid);background:var(--cream);flex-shrink:0;}
-.atab{flex:1;padding:.85rem .25rem;font-size:.77rem;font-weight:700;color:var(--gray-tx);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:'Noto Sans JP',sans-serif;}
-.atab.active{color:var(--navy);border-bottom-color:var(--navy);background:var(--white);}
+.adm-tabs{display:flex;border-bottom:1px solid var(--gray-mid);background:var(--cream);flex-shrink:0;overflow-x:auto;}
+.atab{flex:1;min-width:0;padding:.8rem .1rem;font-size:.72rem;font-weight:700;color:var(--gray-tx);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;}
+.atab.active{color:var(--red-dark);border-bottom-color:var(--red);background:var(--white);}
 .adm-body{flex:1;overflow-y:auto;padding:1.25rem 1.5rem;}
 .asec{display:none;}.asec.active{display:block;}
-.asec-ttl{font-size:.77rem;font-weight:700;color:var(--navy);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.07em;}
+.asec-ttl{font-size:.77rem;font-weight:700;color:var(--red-dark);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.07em;}
+
+/* Admin user rows */
 .user-list{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.25rem;}
 .user-row{display:flex;align-items:center;gap:.75rem;padding:.7rem .9rem;background:var(--gray-lt);border-radius:8px;}
-.ue{flex:1;color:var(--navy);font-weight:500;word-break:break-all;font-size:.79rem;}
+.ue{flex:1;color:#1a0508;font-weight:500;word-break:break-all;font-size:.79rem;}
 .urole{font-size:.67rem;padding:2px 8px;border-radius:99px;font-weight:700;flex-shrink:0;}
-.urole.admin{background:rgba(201,168,76,.2);color:#7a4f0a;}
-.urole.member{background:var(--navy-pale);color:var(--navy);}
-.add-box{background:var(--navy-pale);border-radius:10px;padding:1rem;}
-.add-box h4{font-size:.79rem;font-weight:700;margin-bottom:.75rem;}
+.urole.admin{background:rgba(232,184,75,.25);color:#7a4f0a;}
+.urole.member{background:var(--red-pale);color:var(--red-dark);}
+.add-box{background:var(--red-pale);border-radius:10px;padding:1rem;}
+.add-box h4{font-size:.79rem;font-weight:700;margin-bottom:.75rem;color:var(--red-dark);}
 .add-row{display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap;}
 .add-row .fg{flex:1;min-width:160px;margin-bottom:0;}
-.add-row select{padding:.6rem .5rem;border:1.5px solid var(--gray-mid);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--cream);color:var(--navy);height:42px;cursor:pointer;}
+.add-row select{padding:.6rem .5rem;border:1.5px solid var(--gray-mid);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--cream);color:#1a0508;height:42px;cursor:pointer;}
+
+/* Admin borrow rows */
 .bo-row{display:flex;flex-direction:column;gap:.3rem;padding:.85rem 1rem;background:var(--gray-lt);border-radius:8px;font-size:.82rem;margin-bottom:.5rem;}
-.bo-row.od{background:var(--red-bg);}
-.bo-book{font-weight:700;color:var(--navy);}
+.bo-row.od{background:var(--danger-bg);}
+.bo-book{font-weight:700;color:#1a0508;}
 .bo-meta{color:var(--gray-tx);display:flex;gap:1rem;flex-wrap:wrap;}
-.od .bo-meta{color:var(--red-text);font-weight:600;}
+.od .bo-meta{color:var(--danger-text);font-weight:600;}
+
+/* Admin report rows */
 .rp-row{padding:.85rem 1rem;background:var(--gray-lt);border-radius:8px;font-size:.82rem;margin-bottom:.5rem;}
 .rp-hd{display:flex;justify-content:space-between;margin-bottom:.3rem;gap:.5rem;align-items:flex-start;}
-.rp-book{font-weight:700;color:var(--navy);}
+.rp-book{font-weight:700;color:#1a0508;}
 .rp-dt{color:var(--gray-tx);font-size:.73rem;flex-shrink:0;}
 .rp-meta{color:var(--gray-tx);margin-bottom:.4rem;font-size:.77rem;}
-.rp-body{background:var(--white);border-radius:6px;padding:.5rem .75rem;color:var(--navy);line-height:1.65;font-size:.8rem;white-space:pre-wrap;}
+.rp-body{background:var(--white);border-radius:6px;padding:.5rem .75rem;color:#1a0508;line-height:1.65;font-size:.8rem;white-space:pre-wrap;}
+
+/* ④ Book management rows */
+.bk-row{display:flex;align-items:center;gap:.5rem;padding:.65rem .9rem;background:var(--gray-lt);border-radius:8px;margin-bottom:.45rem;}
+.bk-row-info{flex:1;min-width:0;}
+.bk-row-title{font-size:.82rem;font-weight:700;color:#1a0508;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bk-row-sub{font-size:.72rem;color:var(--gray-tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bk-row-acts{display:flex;gap:.35rem;flex-shrink:0;}
+.bk-borrowed-note{font-size:.68rem;color:var(--amber-text);font-weight:600;flex-shrink:0;}
+
 .empty{text-align:center;padding:2rem;color:var(--gray-tx);font-size:.83rem;}
 
 @media(max-width:640px){
@@ -191,13 +211,11 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
 </head>
 <body>
 
-<!-- LOADING -->
 <div id="screen-loading"><div style="text-align:center"><div class="sp"></div><p>読み込み中...</p></div></div>
 
-<!-- LOGIN -->
 <div id="screen-login" class="hidden">
   <div class="login-card">
-    <div class="logo-login">English<span>Circle</span></div>
+    <div class="logo-login">English<span>Club</span></div>
     <div class="login-sub">Textbook Lending System</div>
     <button class="btn-google" onclick="signIn()">
       <svg class="gi" viewBox="0 0 24 24">
@@ -208,11 +226,10 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
       </svg>
       学校用Googleアカウントでログイン
     </button>
-    <p class="login-note">このシステムは英語サークル会員専用です。<br>登録されたアカウントのみアクセスできます。</p>
+    <p class="login-note">このシステムは英語クラブ会員専用です。<br>登録されたアカウントのみアクセスできます。</p>
   </div>
 </div>
 
-<!-- UNAUTHORIZED -->
 <div id="screen-unauthorized" class="hidden">
   <div class="unauth-card">
     <div class="unauth-icon">🚫</div>
@@ -223,12 +240,11 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
   </div>
 </div>
 
-<!-- APP -->
 <div id="app" class="hidden">
 
   <header>
     <div class="hdr">
-      <div class="logo">English<span>Circle</span></div>
+      <div class="logo">English<span>Club</span></div>
       <div class="hdr-mid">
         <span class="sp-pill av" id="stat-av">— 冊 貸出可</span>
         <span class="sp-pill bo" id="stat-bo">— 冊 貸出中</span>
@@ -267,7 +283,7 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
         <li><span class="rn">4.</span><span>貸し出す教材は <strong>学校の備品</strong> です。書き込み等は不可です。返却いただけない場合、教材代をお支払いいただきますので、予めご了承ください。</span></li>
       </ul>
       <div class="modal-acts">
-        <button class="btn btn-navy btn-full btn-lg" onclick="closeWelcome()">確認しました</button>
+        <button class="btn btn-primary btn-full btn-lg" onclick="closeWelcome()">確認しました</button>
       </div>
     </div>
   </div>
@@ -288,7 +304,7 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
       </div>
       <div class="modal-acts">
         <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">キャンセル</button>
-        <button class="btn btn-navy" style="flex:1" onclick="confirmBorrow()">借りる</button>
+        <button class="btn btn-primary" style="flex:1" onclick="confirmBorrow()">借りる</button>
       </div>
     </div>
   </div>
@@ -315,7 +331,7 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
       <div class="rpt-alert">📝 報告書作成のタスクが追加されました。提出するまで次の教科書は借りられません。</div>
       <div class="modal-acts">
         <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">あとで書く</button>
-        <button class="btn btn-navy" style="flex:1" onclick="closeModals();openReport();">今すぐ書く</button>
+        <button class="btn btn-primary" style="flex:1" onclick="closeModals();openReport();">今すぐ書く</button>
       </div>
     </div>
   </div>
@@ -325,26 +341,30 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
     <div class="modal">
       <h2>📝 報告書の提出</h2>
       <p class="modal-sub">簡単で構いませんので、ご記入ください。</p>
-      <div class="fg">
-        <label>教科書名</label>
-        <input type="text" id="rp-book" readonly>
-      </div>
-      <div class="fg">
-        <label>取り組んだページ数</label>
-        <input type="text" id="rp-pages" placeholder="例：Unit 1〜3（約45ページ）">
-      </div>
-      <div class="fg">
-        <label>学習内容と感想</label>
-        <textarea id="rp-content" placeholder="取り組んだ内容や感想を自由にご記入ください。"></textarea>
-      </div>
+      <div class="fg"><label>教科書名</label><input type="text" id="rp-book" readonly></div>
+      <div class="fg"><label>取り組んだページ数</label><input type="text" id="rp-pages" placeholder="例：Unit 1〜3（約45ページ）"></div>
+      <div class="fg"><label>学習内容と感想</label><textarea id="rp-content" placeholder="取り組んだ内容や感想を自由にご記入ください。"></textarea></div>
       <div class="modal-acts">
         <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">あとで書く</button>
-        <button class="btn btn-navy" style="flex:1" onclick="submitReport()">提出する</button>
+        <button class="btn btn-primary" style="flex:1" onclick="submitReport()">提出する</button>
       </div>
     </div>
   </div>
 
-  <!-- ADMIN -->
+  <!-- BOOK EDIT MODAL (管理者用) -->
+  <div class="mo" id="m-bk-edit">
+    <div class="modal">
+      <h2 id="bk-edit-title">📖 教科書を編集</h2>
+      <p class="modal-sub" id="bk-edit-sub"></p>
+      <div class="fg"><label>教科書タイトル</label><input type="text" id="bk-edit-name" placeholder="教科書のタイトル"></div>
+      <div class="fg"><label>サブタイトル・著者など</label><input type="text" id="bk-edit-sub-input" placeholder="例：TEX加藤 著 / TOEIC L&amp;R TEST"></div>
+      <div class="modal-acts">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">キャンセル</button>
+        <button class="btn btn-primary" style="flex:1" onclick="saveBkEdit()">保存する</button>
+      </div>
+    </div>
+  </div>
+
   <div class="adm-ov" id="adm-ov" onclick="closeAdmin()"></div>
   <div id="panel-admin">
     <div class="adm-hd">
@@ -353,10 +373,13 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
     </div>
     <div class="adm-tabs">
       <div class="atab active" onclick="swTab(this,'users')">👥 ユーザー</div>
+      <div class="atab" onclick="swTab(this,'books')">📖 教科書</div>
       <div class="atab" onclick="swTab(this,'borrows')">📚 貸出状況</div>
       <div class="atab" onclick="swTab(this,'reports')">📝 報告書</div>
     </div>
     <div class="adm-body">
+
+      <!-- USERS -->
       <div class="asec active" id="asec-users">
         <div class="asec-ttl">登録ユーザー</div>
         <div class="user-list" id="adm-users"></div>
@@ -370,18 +393,39 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
               <option value="member">メンバー</option>
               <option value="admin">管理者</option>
             </select>
-            <button class="btn btn-navy" style="align-self:flex-end;" onclick="addUser()">追加</button>
+            <button class="btn btn-primary" style="align-self:flex-end;" onclick="addUser()">追加</button>
           </div>
         </div>
       </div>
+
+      <!-- BOOKS MANAGEMENT ④ -->
+      <div class="asec" id="asec-books">
+        <div class="asec-ttl">教科書の管理</div>
+        <div id="adm-books-list"></div>
+        <div class="add-box" style="margin-top:1rem;">
+          <h4>➕ 教科書を追加</h4>
+          <div class="fg"><label>タイトル</label>
+            <input type="text" id="new-bk-title" placeholder="例：公式TOEIC Listening & Reading 問題集 5">
+          </div>
+          <div class="fg" style="margin-bottom:.75rem;"><label>サブタイトル・著者など</label>
+            <input type="text" id="new-bk-sub" placeholder="例：Educational Testing Service 著">
+          </div>
+          <button class="btn btn-primary" onclick="addBook()">追加する</button>
+        </div>
+      </div>
+
+      <!-- BORROWS -->
       <div class="asec" id="asec-borrows">
         <div class="asec-ttl">現在の貸出状況</div>
         <div id="adm-borrows"></div>
       </div>
+
+      <!-- REPORTS -->
       <div class="asec" id="asec-reports">
         <div class="asec-ttl">提出済み報告書</div>
         <div id="adm-reports"></div>
       </div>
+
     </div>
   </div>
 
@@ -403,7 +447,7 @@ const firebaseConfig = {
 };
 // =====================================================
 
-const BOOKS = [
+const BOOKS_DEFAULT = [
   {title:"公式TOEIC Listening & Reading 問題集 1",sub:"Educational Testing Service 著"},
   {title:"公式TOEIC Listening & Reading 問題集 2",sub:"Educational Testing Service 著"},
   {title:"公式TOEIC Listening & Reading 問題集 3",sub:"Educational Testing Service 著"},
@@ -419,6 +463,7 @@ const BOOKS = [
 firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(), db=firebase.database();
 let me=null,myRole=null,books={},pending=null,curId=null,retTitle='';
+let editBkId=null; // 編集中の書籍ID
 
 function ekey(e){return e.replace(/\./g,',').replace(/@/g,'_at_');}
 function dkey(k){return k.replace(/_at_/g,'@').replace(/,/g,'.');}
@@ -452,13 +497,11 @@ auth.onAuthStateChanged(async user=>{
   const bs=await db.ref('books').once('value');
   if(!bs.exists()){
     const init={};
-    BOOKS.forEach((b,i)=>{ init['book_'+(i+1)]={...b,status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null}; });
+    BOOKS_DEFAULT.forEach((b,i)=>{ init['book_'+(i+1)]={...b,status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null}; });
     await db.ref('books').set(init);
   }
 
-  show('app');
-  renderUser();
-  startListeners();
+  show('app'); renderUser(); startListeners();
   if(!sessionStorage.getItem('welcomed')) document.getElementById('mw').classList.add('open');
 });
 
@@ -473,7 +516,7 @@ function renderUser(){
 function startListeners(){
   db.ref('books').on('value',snap=>{
     books=snap.val()||{};
-    renderBooks(); renderStats(); renderAdmBorrows();
+    renderBooks(); renderStats(); renderAdmBorrows(); renderAdmBooksList();
   });
   db.ref('pendingReports/'+ekey(me.email)).on('value',snap=>{
     pending=snap.val();
@@ -514,7 +557,7 @@ function renderBooks(){
       info=`<div class="bi ${cls}"><div>${who}</div><div>${due}</div></div>`;
     }
     let act='';
-    if(!bw) act=`<button class="btn btn-card btn-navy" onclick="openBorrow('${id}','${esc(b.title)}')" ${canBorrow?'':'disabled'}>借りる</button>`;
+    if(!bw) act=`<button class="btn btn-card btn-primary" onclick="openBorrow('${id}','${esc(b.title)}')" ${canBorrow?'':'disabled'}>借りる</button>`;
     else if(canReturn) act=`<button class="btn btn-card btn-teal" onclick="openReturn('${id}','${esc(b.title)}')">返却する</button>`;
     else act=`<span class="other-note">他の方が借りています</span>`;
     const card=document.createElement('div');
@@ -598,14 +641,14 @@ function submitReport(){
 
 function closeModals(){
   document.querySelectorAll('.mo').forEach(el=>el.classList.remove('open'));
-  curId=null;
+  curId=null; editBkId=null;
 }
 document.querySelectorAll('.mo:not(#mw)').forEach(el=>{
   el.addEventListener('click',e=>{if(e.target===el)closeModals();});
 });
 
+// ── Admin ──
 function openAdmin(){
-  renderAdmBorrows();
   document.getElementById('panel-admin').classList.add('open');
   document.getElementById('adm-ov').classList.add('open');
 }
@@ -621,6 +664,7 @@ function swTab(el,tab){
   if(tab==='borrows')renderAdmBorrows();
 }
 
+// ── Users ──
 function renderAdmUsers(users){
   const el=document.getElementById('adm-users');
   const entries=Object.entries(users);
@@ -647,6 +691,63 @@ function removeUser(k){
   db.ref('allowedUsers/'+k).remove();
 }
 
+// ── Books management ④ ──
+function renderAdmBooksList(){
+  const el=document.getElementById('adm-books-list');
+  if(!el)return;
+  const entries=Object.entries(books);
+  if(!entries.length){el.innerHTML='<p class="empty">教科書がありません</p>';return;}
+  el.innerHTML=entries.map(([id,b])=>{
+    const isBorrowed=b.status==='borrowed';
+    return `<div class="bk-row">
+      <div class="bk-row-info">
+        <div class="bk-row-title">${b.title}</div>
+        <div class="bk-row-sub">${b.sub||'—'}</div>
+      </div>
+      ${isBorrowed?'<span class="bk-borrowed-note">貸出中</span>':''}
+      <div class="bk-row-acts">
+        <button class="btn" style="background:var(--red-pale);color:var(--red-dark);font-size:.72rem;padding:4px 10px;" onclick="openBkEdit('${id}')">編集</button>
+        <button class="btn btn-danger" style="font-size:.72rem;padding:4px 10px;" onclick="deleteBook('${id}')" ${isBorrowed?'disabled':''} title="${isBorrowed?'貸出中のため削除不可':''}">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openBkEdit(id){
+  const b=books[id];if(!b)return;
+  editBkId=id;
+  document.getElementById('bk-edit-title').textContent='📖 教科書を編集';
+  document.getElementById('bk-edit-sub').textContent=b.title;
+  document.getElementById('bk-edit-name').value=b.title;
+  document.getElementById('bk-edit-sub-input').value=b.sub||'';
+  document.getElementById('m-bk-edit').classList.add('open');
+}
+function saveBkEdit(){
+  const title=document.getElementById('bk-edit-name').value.trim();
+  const sub=document.getElementById('bk-edit-sub-input').value.trim();
+  if(!title){alert('タイトルを入力してください。');return;}
+  if(editBkId){
+    db.ref('books/'+editBkId).update({title,sub});
+  }
+  closeModals();
+}
+function deleteBook(id){
+  const b=books[id];if(!b)return;
+  if(b.status==='borrowed'){alert('貸出中の教科書は削除できません。先に返却してください。');return;}
+  if(!confirm(`「${b.title}」を削除しますか？\nこの操作は取り消せません。`))return;
+  db.ref('books/'+id).remove();
+}
+function addBook(){
+  const title=document.getElementById('new-bk-title').value.trim();
+  const sub=document.getElementById('new-bk-sub').value.trim();
+  if(!title){alert('タイトルを入力してください。');return;}
+  const newKey='book_'+Date.now();
+  db.ref('books/'+newKey).set({title,sub,status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null});
+  document.getElementById('new-bk-title').value='';
+  document.getElementById('new-bk-sub').value='';
+}
+
+// ── Borrows ──
 function renderAdmBorrows(){
   const el=document.getElementById('adm-borrows');
   if(!el)return;
@@ -673,6 +774,7 @@ function forceReturn(id){
   db.ref('books/'+id).update({status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null});
 }
 
+// ── Reports ──
 function renderAdmReports(reps){
   const el=document.getElementById('adm-reports');
   const entries=Object.entries(reps).reverse();
