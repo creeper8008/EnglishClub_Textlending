@@ -815,7 +815,11 @@ function confirmReturn(){
     borrowDate:bk.borrowDate||null,
     returnDate:today()
   });
-  db.ref('pendingReports/'+ekey(me.email)).set({bookId:curId,bookTitle:retTitle,borrowDate:bk.borrowDate||null,returnDate:today()});
+  db.ref('pendingReports/'+ekey(me.email)).set({
+  bookId:curId,bookTitle:retTitle,
+  borrowDate:bk.borrowDate||null,returnDate:today(),
+  borrowerRealName:me.displayName||me.email
+});
   db.ref('books/'+curId).update({status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null});
   closeModals();
   document.getElementById('mrs').classList.add('open');
@@ -1022,7 +1026,7 @@ function renderAdmPendingReports(prs){
   el.innerHTML=entries.map(([k,v])=>`
     <div class="pr-row">
       <div class="pr-info">
-        <div class="pr-email">${dkey(k)}</div>
+        <div class="pr-email">${v.borrowerRealName||dkey(k)}</div>
         <div class="pr-book">📚 ${v.bookTitle||'—'} ｜ 返却日：${fmt(v.returnDate)}</div>
       </div>
     </div>`).join('');
