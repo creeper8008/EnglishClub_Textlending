@@ -271,7 +271,7 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
       </svg>
       学校用Googleアカウントでログイン
     </button>
-    <p class="login-note">このシステムは英語クラブ会員専用です。<br>登録されたアカウントのみアクセスできます。</p>
+    <p class="login-note">このシステムは英語サークル会員専用です。<br>登録されたアカウントのみアクセスできます。</p>
   </div>
 </div>
 
@@ -651,7 +651,7 @@ function renderUser(){
   document.getElementById('unm').textContent=me.displayName||me.email.split('@')[0];
   if(myRole==='admin'){
     document.getElementById('btn-admin').classList.remove('hidden');
-    db.ref('admins/'+me.uid).set(true); // UIDをadminsに登録
+    db.ref('admins/'+me.uid).set(true);
   }
 }
 
@@ -671,6 +671,14 @@ function startListeners(){
   });
   db.ref('system/maintenance').on('value',snap=>{
     const on=snap.exists()&&snap.val().enabled;
+    if(on&&myRole!=='admin'){
+      // 一般ユーザーはリアルタイムでメンテナンス画面へ
+      const msg=snap.val().message||'';
+      const el=document.getElementById('maint-custom-msg');
+      if(el){el.textContent=msg;el.style.display=msg?'block':'none';}
+      show('screen-maintenance');
+      return;
+    }
     document.getElementById('maint-banner').classList.toggle('hidden',!on||myRole!=='admin');
     if(myRole==='admin'){
       const tog=document.getElementById('maint-toggle');
@@ -815,11 +823,7 @@ function confirmReturn(){
     borrowDate:bk.borrowDate||null,
     returnDate:today()
   });
-  db.ref('pendingReports/'+ekey(me.email)).set({
-  bookId:curId,bookTitle:retTitle,
-  borrowDate:bk.borrowDate||null,returnDate:today(),
-  borrowerRealName:me.displayName||me.email
-});
+  db.ref('pendingReports/'+ekey(me.email)).set({bookId:curId,bookTitle:retTitle,borrowDate:bk.borrowDate||null,returnDate:today(),borrowerRealName:me.displayName||me.email});
   db.ref('books/'+curId).update({status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null});
   closeModals();
   document.getElementById('mrs').classList.add('open');
@@ -916,8 +920,8 @@ function renderAdmCatsList(){
 function addCategory(){
   const name=document.getElementById('new-cat-name').value.trim();
   if(!name){alert('カテゴリ名を入力してください。');return;}
-  const order=Object.keys(cats).length;
-  db.ref('categories/cat_'+Date.now()).set({name,order});
+  const maxOrder=Object.values(cats).reduce((m,c)=>Math.max(m,(c.order||0)),0);
+  db.ref('categories/cat_'+Date.now()).set({name,order:maxOrder+1});
   document.getElementById('new-cat-name').value='';
 }
 function deleteCat(k){
@@ -993,7 +997,7 @@ function renderAdmBorrows(){
     return `<div class="bo-row${od?' od':''}">
       <div class="bo-book">${b.title}</div>
       <div class="bo-meta">
-        <span>👤 ${b.borrowerRealName||'—'}（${b.borrowerNickname||'—'}）</span>
+        <span>👤 ${b.borrowerRealName||b.borrowerNickname||'—'}（${b.borrowerNickname||'—'}）</span>
         <span>📅 ${fmt(b.returnDate)}${od?' ⚠️ 延滞':''}</span>
       </div>
       <div style="margin-top:.4rem;">
