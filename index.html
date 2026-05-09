@@ -735,7 +735,7 @@ function renderBooks(){
       const mine=bw&&b.borrowerEmail===me.email;
       const od=bw&&isOD(b.returnDate);
       const canBorrow=!bw&&!pending;
-      const canReturn=mine||(myRole==='admin'&&bw);
+      const canReturn=mine;
       let bdg='av',lbl='貸出可';
       if(od){bdg='od';lbl='延滞中';}else if(bw){bdg='bo';lbl='貸出中';}
       let info='';
