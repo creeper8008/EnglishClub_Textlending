@@ -649,7 +649,10 @@ function renderUser(){
   if(me.photoURL) av.innerHTML=`<img src="${me.photoURL}" alt="">`;
   else av.textContent=(me.displayName||me.email||'?')[0].toUpperCase();
   document.getElementById('unm').textContent=me.displayName||me.email.split('@')[0];
-  if(myRole==='admin') document.getElementById('btn-admin').classList.remove('hidden');
+  if(myRole==='admin'){
+    document.getElementById('btn-admin').classList.remove('hidden');
+    db.ref('admins/'+me.uid).set(true); // UIDをadminsに登録
+  }
 }
 
 function startListeners(){
