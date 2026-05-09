@@ -24,7 +24,7 @@
   --r:12px;--rl:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Noto Sans JP','DM Sans',sans-serif;background:var(--cream);color:#1a0508;min-height:100vh;}
+body{font-family:'Noto Sans JP','DM Sans',sans-serif;background:var(--cream);color:#1a0508;min-height:100vh;overflow-x:hidden;}
 .hidden{display:none!important;}
 
 .btn{padding:.6rem 1.2rem;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;border:none;transition:all .18s;font-family:'Noto Sans JP',sans-serif;letter-spacing:.02em;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
@@ -243,11 +243,13 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
 
 @media(max-width:640px){
   main{padding:1.5rem 1rem;}
-  .hdr{padding:0 .85rem;gap:.4rem;}
-  .logo{font-size:.95rem;}
+  .hdr{padding:0 .6rem;gap:.25rem;}
+  .logo{font-size:.82rem;letter-spacing:0;}
   .unm{display:none;}
-  .hdr-mid{gap:.35rem;}
-  .sp-pill{font-size:.65rem;padding:3px 7px;}
+  .hdr-mid{gap:.25rem;}
+  .sp-pill{font-size:.6rem;padding:2px 6px;}
+  .btn-hdr{font-size:.66rem;padding:4px 7px;}
+  .uav{width:26px;height:26px;font-size:.7rem;}
   #pending-banner,#maint-banner{font-size:.75rem;padding:.6rem 1rem;gap:.5rem;}
 }
 </style>
@@ -459,6 +461,7 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
       <div class="atab" onclick="swTab(this,'books')">📖 教科書</div>
       <div class="atab" onclick="swTab(this,'borrows')">📚 貸出</div>
       <div class="atab" onclick="swTab(this,'reports')">📝 報告書</div>
+      <div class="atab" onclick="swTab(this,'history')">📋 履歴</div>
       <div class="atab" onclick="swTab(this,'maint')">⚡ 緊急停止</div>
     </div>
     <div class="adm-body">
@@ -528,6 +531,12 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
         <div id="adm-reports"></div>
       </div>
 
+      <!-- HISTORY -->
+      <div class="asec" id="asec-history">
+        <div class="asec-ttl">貸出履歴（本名で表示）</div>
+        <div id="adm-history"></div>
+      </div>
+
       <!-- MAINTENANCE -->
       <div class="asec" id="asec-maint">
         <div class="asec-ttl">緊急停止 / メンテナンスモード</div>
@@ -562,14 +571,13 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
 // 🔧 Firebase 設定 — ここを書き換えてください
 // =====================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyAa3fYPhYmDGgXDw3BG76PPyuoYvSYsp3s",
-  authDomain: "english-textlending.firebaseapp.com",
-  databaseURL: "https://english-textlending-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "english-textlending",
-  storageBucket: "english-textlending.firebasestorage.app",
-  messagingSenderId: "84801336014",
-  appId: "1:84801336014:web:c725c16b3f9f106ac1969f",
-  measurementId: "G-XFG4WPD3BD"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.REGION.firebasedatabase.app",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 // =====================================================
 
@@ -673,6 +681,7 @@ function startListeners(){
     db.ref('allowedUsers').on('value',snap=>renderAdmUsers(snap.val()||{}));
     db.ref('reports').on('value',snap=>renderAdmReports(snap.val()||{}));
     db.ref('pendingReports').on('value',snap=>renderAdmPendingReports(snap.val()||{}));
+    db.ref('borrowHistory').on('value',snap=>renderAdmHistory(snap.val()||{}));
   }
 }
 
@@ -680,7 +689,7 @@ function signIn(){
   const p=new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(p).catch(e=>alert('ログイン失敗: '+e.message));
 }
-function doSignOut(){auth.signOut();}
+function doSignOut(){ auth.signOut().then(()=>location.reload()); }
 function closeWelcome(){
   document.getElementById('mw').classList.remove('open');
   sessionStorage.setItem('welcomed','1');
@@ -781,7 +790,7 @@ function confirmBorrow(){
   if(!nick){alert('ニックネームを入力してください。');return;}
   if(!date){alert('返却予定日を選択してください。');return;}
   if(date>maxD()){alert('返却日は31日以内で選択してください。');return;}
-  db.ref('books/'+curId).update({status:'borrowed',borrowerEmail:me.email,borrowerNickname:nick,borrowDate:today(),returnDate:date});
+  db.ref('books/'+curId).update({status:'borrowed',borrowerEmail:me.email,borrowerNickname:nick,borrowerRealName:me.displayName||me.email,borrowDate:today(),returnDate:date});
   closeModals();
 }
 
@@ -792,7 +801,17 @@ function openReturn(id,title){
   document.getElementById('mr').classList.add('open');
 }
 function confirmReturn(){
-  db.ref('pendingReports/'+ekey(me.email)).set({bookId:curId,bookTitle:retTitle,borrowDate:books[curId]?.borrowDate||null,returnDate:today()});
+  const bk=books[curId]||{};
+  // 履歴保存
+  db.ref('borrowHistory/hist_'+Date.now()).set({
+    bookId:curId, bookTitle:retTitle,
+    borrowerEmail:me.email,
+    borrowerNickname:bk.borrowerNickname||'—',
+    borrowerRealName:bk.borrowerRealName||me.displayName||me.email,
+    borrowDate:bk.borrowDate||null,
+    returnDate:today()
+  });
+  db.ref('pendingReports/'+ekey(me.email)).set({bookId:curId,bookTitle:retTitle,borrowDate:bk.borrowDate||null,returnDate:today()});
   db.ref('books/'+curId).update({status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null});
   closeModals();
   document.getElementById('mrs').classList.add('open');
@@ -978,6 +997,15 @@ function renderAdmBorrows(){
 function forceReturn(id){
   const b=books[id];if(!b)return;
   if(!confirm(`「${b.title}」を強制返却しますか？`))return;
+  db.ref('borrowHistory/hist_'+Date.now()).set({
+    bookId:id, bookTitle:b.title,
+    borrowerEmail:b.borrowerEmail||'—',
+    borrowerNickname:b.borrowerNickname||'—',
+    borrowerRealName:b.borrowerRealName||b.borrowerEmail||'—',
+    borrowDate:b.borrowDate||null,
+    returnDate:today(),
+    forcedReturn:true
+  });
   if(b.borrowerEmail)db.ref('pendingReports/'+ekey(b.borrowerEmail)).remove();
   db.ref('books/'+id).update({status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null});
 }
@@ -1004,6 +1032,25 @@ function renderAdmReports(reps){
       <div class="rp-hd"><span class="rp-book">${r.bookTitle}</span><span class="rp-dt">提出：${fmt(r.submittedAt)}</span></div>
       <div class="rp-meta">📧 ${r.borrowerEmail} ｜ 📄 ${r.pages}</div>
       <div class="rp-body">${r.content}</div>
+    </div>`).join('');
+}
+
+function renderAdmHistory(hist){
+  const el=document.getElementById('adm-history');if(!el)return;
+  const entries=Object.entries(hist).sort((a,b)=>b[0].localeCompare(a[0]));
+  if(!entries.length){el.innerHTML='<p class="empty">貸出履歴がありません</p>';return;}
+  el.innerHTML=entries.map(([,h])=>`
+    <div class="rp-row">
+      <div class="rp-hd">
+        <span class="rp-book">${h.bookTitle}</span>
+        <span class="rp-dt">返却：${fmt(h.returnDate)}</span>
+      </div>
+      <div class="rp-meta">
+        👤 <strong>${h.borrowerRealName||'—'}</strong>（${h.borrowerNickname||'—'}）<br>
+        📧 ${h.borrowerEmail||'—'}<br>
+        📅 貸出：${fmt(h.borrowDate)} → 返却：${fmt(h.returnDate)}
+        ${h.forcedReturn?'&nbsp;<span style="color:var(--danger-text);font-size:.7rem;font-weight:700;">強制返却</span>':''}
+      </div>
     </div>`).join('');
 }
 
