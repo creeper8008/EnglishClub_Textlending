@@ -989,7 +989,7 @@ function renderAdmBorrows(){
     return `<div class="bo-row${od?' od':''}">
       <div class="bo-book">${b.title}</div>
       <div class="bo-meta">
-        <span>👤 ${b.borrowerNickname||'—'}</span>
+        <span>👤 ${b.borrowerRealName||'—'}（${b.borrowerNickname||'—'}）</span>
         <span>📅 ${fmt(b.returnDate)}${od?' ⚠️ 延滞':''}</span>
       </div>
       <div style="margin-top:.4rem;">
