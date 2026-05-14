@@ -625,11 +625,13 @@ firebase.initializeApp(firebaseConfig);
 // ④ Firebase App Check（reCAPTCHA v3）
 // ※ reCAPTCHAサイトキーを取得後、'YOUR_RECAPTCHA_SITE_KEY' を置き換えてください
 const appCheck = firebase.appCheck();
+
 appCheck.activate(
-  new firebase.appCheck.ReCaptchaV3Provider(6LdIveksAAAAAIchLQBZRf_7Odyt7hYWc0Jyh6YX),
+  new firebase.appCheck.ReCaptchaV3Provider(
+    "6LdIveksAAAAAIchLQBZRf_7Odyt7hYWc0Jyh6YX"
+  ),
   true
 );
-
 const auth=firebase.auth(), db=firebase.database();
 let me=null, myRole=null, books={}, cats={}, pending=null, curId=null, retTitle='', editBkId=null;
 
