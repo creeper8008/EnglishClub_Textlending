@@ -1,1 +1,1195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googleapis.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://www.gstatic.com https://*.firebaseio.com https://*.googleapis.com https://*.cloudfunctions.net wss://*.firebaseio.com; img-src 'self' data: https://lh3.googleusercontent.com; frame-src https://accounts.google.com;">
+<title>英語サークル｜教科書貸出管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Outfit:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --red:#B5122B;--red-dark:#8C0D21;--red-light:#D41536;
+  --red-pale:#FDEAED;--red-mid:#F5C0C8;
+  --cream:#fafaf7;--white:#ffffff;
+  --teal-bg:#e1f5ee;--teal-text:#0f6e56;--teal-bd:#1d9e75;
+  --amber-bg:#faeeda;--amber-text:#854f0b;--amber-bd:#ba7517;
+  --danger-bg:#fde8e8;--danger-text:#c0392b;--danger-bd:#e74c3c;
+  --gray-lt:#f1efe8;--gray-mid:#d3d1c7;--gray-tx:#5f5e5a;
+  --gold:#e8b84b;
+  --sh:0 2px 12px rgba(181,18,43,.07);
+  --sh2:0 6px 24px rgba(181,18,43,.13);
+  --shm:0 24px 64px rgba(100,0,15,.22);
+  --r:12px;--rl:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP','DM Sans',sans-serif;background:var(--cream);color:#1a0508;min-height:100vh;overflow-x:hidden;}
+.hidden{display:none!important;}
 
+.btn{padding:.6rem 1.2rem;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;border:none;transition:all .18s;font-family:'Noto Sans JP',sans-serif;letter-spacing:.02em;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.btn:disabled{opacity:.38;cursor:not-allowed;pointer-events:none;}
+.btn-primary{background:var(--red);color:#fff;}.btn-primary:hover{background:var(--red-dark);}
+.btn-teal{background:var(--teal-bg);color:var(--teal-text);border:1px solid var(--teal-bd);}.btn-teal:hover{background:#c0e8d8;}
+.btn-ghost{background:var(--gray-lt);color:var(--gray-tx);}.btn-ghost:hover{background:var(--gray-mid);}
+.btn-danger{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-bd);}.btn-danger:hover{background:#fbd0d0;}
+.btn-lg{padding:.85rem 2rem;font-size:1rem;border-radius:10px;}
+.btn-full{width:100%;}
+
+/* LOADING */
+#screen-loading{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.sp{width:36px;height:36px;border:3px solid var(--gray-mid);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#screen-loading p{font-size:.85rem;color:var(--gray-tx);text-align:center;}
+
+/* LOGIN */
+#screen-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--red-dark) 0%,var(--red) 60%,#e8354f 100%);padding:2rem;}
+.login-card{background:var(--white);border-radius:20px;padding:3rem 2.5rem;max-width:400px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.3);}
+.logo-login{font-family:'Outfit',sans-serif;font-size:1.85rem;font-weight:800;color:var(--red);letter-spacing:-.02em;}
+.logo-login span{color:var(--red-dark);}
+.login-sub{font-size:.73rem;color:var(--gray-tx);margin-bottom:2.5rem;letter-spacing:.12em;text-transform:uppercase;margin-top:.25rem;}
+.btn-google{background:var(--white);color:#1a0508;border:1.5px solid var(--gray-mid);padding:.8rem 1.5rem;border-radius:10px;font-size:.92rem;font-weight:500;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .18s;font-family:'Noto Sans JP',sans-serif;}
+.btn-google:hover{border-color:var(--red);background:var(--red-pale);}
+.gi{width:20px;height:20px;flex-shrink:0;}
+.login-note{font-size:.72rem;color:var(--gray-tx);margin-top:1.25rem;line-height:1.7;}
+
+/* UNAUTHORIZED */
+#screen-unauthorized{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;}
+.unauth-card{background:var(--white);border-radius:var(--rl);padding:2.5rem;max-width:420px;width:100%;text-align:center;box-shadow:var(--sh);}
+.unauth-icon{font-size:2.8rem;margin-bottom:1rem;}
+.unauth-card h2{font-size:1.1rem;margin-bottom:.5rem;}
+.unauth-card p{font-size:.85rem;color:var(--gray-tx);margin-bottom:.75rem;line-height:1.7;}
+
+/* MAINTENANCE */
+#screen-maintenance{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--red-dark),var(--red));padding:2rem;}
+.maint-card{background:var(--white);border-radius:20px;padding:3rem 2.5rem;max-width:440px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.3);}
+.maint-icon{font-size:3rem;margin-bottom:1rem;}
+.maint-card h2{font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:700;color:var(--red-dark);margin-bottom:1rem;}
+.maint-card p{font-size:.9rem;color:var(--gray-tx);line-height:1.8;}
+#maint-custom-msg{font-size:.88rem;color:#1a0508;background:var(--gray-lt);border-radius:8px;padding:.85rem 1rem;margin-top:1rem;line-height:1.7;display:none;}
+
+/* HEADER */
+header{background:var(--red-dark);position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(100,0,15,.3);}
+.hdr{max-width:1100px;margin:0 auto;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:64px;gap:.75rem;}
+.logo{font-family:'Outfit',sans-serif;font-size:1.15rem;font-weight:800;color:#fff;flex-shrink:0;letter-spacing:-.01em;}
+.logo span{color:var(--gold);}
+.hdr-mid{display:flex;gap:.5rem;align-items:center;flex-shrink:0;}
+.sp-pill{font-size:.7rem;padding:3px 9px;border-radius:99px;font-weight:700;white-space:nowrap;}
+.sp-pill.av{background:var(--teal-bg);color:var(--teal-text);}
+.sp-pill.bo{background:var(--amber-bg);color:var(--amber-text);}
+.hdr-right{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
+.uav{width:30px;height:30px;border-radius:50%;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#fff;font-weight:700;flex-shrink:0;overflow:hidden;}
+.uav img{width:100%;height:100%;object-fit:cover;}
+.unm{font-size:.77rem;color:rgba(255,255,255,.75);}
+.btn-hdr{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.22);padding:5px 11px;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;transition:all .18s;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;}
+.btn-hdr:hover{background:rgba(255,255,255,.24);}
+.btn-hdr.gold{background:rgba(232,184,75,.18);border-color:rgba(232,184,75,.45);color:var(--gold);}
+.btn-hdr.gold:hover{background:rgba(232,184,75,.32);}
+
+/* MAINTENANCE BANNER (admin view) */
+#maint-banner{background:linear-gradient(90deg,#7a0d1c,var(--red));color:#fff;padding:.65rem 2rem;display:flex;align-items:center;justify-content:center;gap:1rem;font-size:.82rem;font-weight:500;flex-wrap:wrap;}
+
+/* PENDING BANNER */
+#pending-banner{background:linear-gradient(90deg,#7a3f0a,#ba7517);color:#fff;padding:.65rem 2rem;display:flex;align-items:center;justify-content:center;gap:1rem;font-size:.82rem;font-weight:500;flex-wrap:wrap;}
+.btn-bnr{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:4px 13px;border-radius:6px;font-size:.77rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;}
+.btn-bnr:hover{background:rgba(255,255,255,.3);}
+
+/* MAIN */
+main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
+.pg-label{font-size:.74rem;text-transform:uppercase;letter-spacing:.14em;color:var(--gray-tx);margin-bottom:.4rem;font-family:'DM Sans',sans-serif;}
+.pg-h1{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;color:var(--red-dark);margin-bottom:2rem;letter-spacing:-.02em;}
+
+/* CATEGORY SECTIONS */
+.cat-section{margin-bottom:2.5rem;}
+.cat-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;}
+.cat-title{font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--red-dark);}
+.cat-count{font-size:.73rem;padding:3px 10px;border-radius:99px;background:var(--red-pale);color:var(--red);font-weight:700;}
+.cat-line{flex:1;height:1px;background:var(--red-mid);opacity:.4;}
+.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.1rem;}
+
+/* BOOK CARD */
+.book-card{background:var(--white);border-radius:var(--r);padding:1.2rem;box-shadow:var(--sh);border:1px solid rgba(181,18,43,.07);transition:box-shadow .2s,transform .2s;display:flex;flex-direction:column;gap:.65rem;}
+.book-card:hover{box-shadow:var(--sh2);transform:translateY(-2px);}
+.book-card.od{border-color:var(--danger-bd);}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;}
+.bk-num{font-size:.67rem;font-weight:600;color:var(--gray-tx);letter-spacing:.08em;font-family:'DM Sans',sans-serif;padding-top:2px;flex-shrink:0;}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:.72rem;font-weight:700;flex-shrink:0;}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.badge.av{background:var(--teal-bg);color:var(--teal-text);border:1px solid var(--teal-bd);}.badge.av::before{background:var(--teal-text);}
+.badge.bo{background:var(--amber-bg);color:var(--amber-text);border:1px solid var(--amber-bd);}.badge.bo::before{background:var(--amber-text);}
+.badge.od{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-bd);}.badge.od::before{background:var(--danger-text);}
+.bk-title{font-size:.92rem;font-weight:700;line-height:1.45;}
+.bk-sub{font-size:.76rem;color:var(--gray-tx);line-height:1.4;}
+.bi{border-radius:8px;padding:.55rem .8rem;font-size:.78rem;display:flex;flex-direction:column;gap:3px;}
+.bi.mine{background:var(--amber-bg);color:var(--amber-text);}
+.bi.other{background:var(--gray-lt);color:var(--gray-tx);}
+.bi.ov{background:var(--danger-bg);color:var(--danger-text);}
+.bi strong{font-weight:700;}
+.card-acts{display:flex;gap:.5rem;margin-top:auto;}
+.btn-card{flex:1;padding:.5rem;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;border:none;transition:all .18s;font-family:'Noto Sans JP',sans-serif;}
+.other-note{font-size:.72rem;color:var(--gray-tx);padding:.4rem;text-align:center;width:100%;}
+
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(100,0,15,.5);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:1rem;}
+.mo.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--rl);padding:2rem;width:100%;max-width:480px;box-shadow:var(--shm);animation:mIn .2s ease;max-height:90vh;overflow-y:auto;}
+@keyframes mIn{from{opacity:0;transform:scale(.95) translateY(8px);}to{opacity:1;transform:none;}}
+.modal-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.2rem;}
+.modal h2{font-family:'Outfit',sans-serif;font-size:1.3rem;font-weight:700;color:var(--red-dark);letter-spacing:-.01em;}
+.modal-close{background:var(--gray-lt);border:none;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gray-tx);transition:background .15s;}
+.modal-close:hover{background:var(--gray-mid);}
+.modal-sub{font-size:.82rem;color:var(--gray-tx);margin-bottom:1.5rem;line-height:1.6;}
+.modal-acts{display:flex;gap:.75rem;margin-top:1.5rem;}
+.fg{margin-bottom:1rem;}
+.fg label{display:block;font-size:.79rem;font-weight:700;color:#1a0508;margin-bottom:.35rem;}
+.fg input,.fg textarea,.fg select{width:100%;padding:.65rem .85rem;border:1.5px solid var(--gray-mid);border-radius:8px;font-size:.9rem;font-family:'Noto Sans JP',sans-serif;color:#1a0508;background:var(--cream);transition:border-color .15s;outline:none;}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--red);}
+.fg input[readonly]{background:#e8e8e3;color:var(--gray-tx);}
+.fg textarea{min-height:110px;resize:vertical;line-height:1.65;}
+.fg-hint{font-size:.72rem;color:var(--gray-tx);margin-top:.25rem;}
+
+/* WELCOME */
+#mw .modal{max-width:540px;}
+/* ② rules-box 背景を中立色に */
+.rules-box{background:var(--gray-lt);border-radius:10px;padding:1.1rem 1.4rem;margin:1rem 0;}
+.rules-box li{font-size:.875rem;line-height:1.7;color:#1a0508;list-style:none;padding:.3rem 0;border-bottom:1px solid var(--gray-mid);display:flex;gap:.75rem;align-items:baseline;}
+.rules-box li:last-child{border-bottom:none;}
+.rn{font-weight:700;color:var(--red);flex-shrink:0;font-family:'DM Sans',sans-serif;font-size:.77rem;}
+
+/* RETURN SUCCESS */
+.sicon{text-align:center;font-size:2.6rem;margin-bottom:.75rem;}
+.nsteps{background:var(--gray-lt);border-radius:10px;padding:1rem 1.25rem;margin:1rem 0;font-size:.83rem;color:#1a0508;line-height:1.8;}
+.rpt-alert{background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:8px;padding:.75rem 1rem;font-size:.83rem;color:var(--amber-text);font-weight:600;line-height:1.5;}
+
+/* ADMIN PANEL */
+#panel-admin{position:fixed;top:0;right:-640px;width:min(600px,100vw);height:100vh;background:var(--white);box-shadow:-8px 0 40px rgba(100,0,15,.18);z-index:300;transition:right .3s ease;display:flex;flex-direction:column;overflow:hidden;}
+#panel-admin.open{right:0;}
+.adm-ov{display:none;position:fixed;inset:0;background:rgba(100,0,15,.35);z-index:299;backdrop-filter:blur(2px);}
+.adm-ov.open{display:block;}
+.adm-hd{background:var(--red-dark);padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.adm-hd h2{font-family:'Outfit',sans-serif;color:var(--gold);font-size:1.05rem;font-weight:700;}
+.btn-x{background:rgba(255,255,255,.12);border:none;color:#fff;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:.88rem;display:flex;align-items:center;justify-content:center;}
+.btn-x:hover{background:rgba(255,255,255,.22);}
+.adm-tabs{display:flex;border-bottom:1px solid var(--gray-mid);background:var(--cream);flex-shrink:0;overflow-x:auto;}
+.atab{flex:1;min-width:0;padding:.75rem .15rem;font-size:.68rem;font-weight:700;color:var(--gray-tx);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;}
+.atab.active{color:var(--red-dark);border-bottom-color:var(--red);background:var(--white);}
+.adm-body{flex:1;overflow-y:auto;padding:1.2rem 1.5rem;}
+.asec{display:none;}.asec.active{display:block;}
+.asec-ttl{font-size:.76rem;font-weight:700;color:var(--red-dark);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.07em;}
+
+/* Users */
+.user-list{display:flex;flex-direction:column;gap:.45rem;margin-bottom:1.25rem;}
+.user-row{display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;background:var(--gray-lt);border-radius:8px;}
+.ue{flex:1;color:#1a0508;font-weight:500;word-break:break-all;font-size:.78rem;}
+.urole{font-size:.66rem;padding:2px 8px;border-radius:99px;font-weight:700;flex-shrink:0;}
+.urole.admin{background:rgba(232,184,75,.25);color:#7a4f0a;}
+.urole.member{background:var(--red-pale);color:var(--red-dark);}
+.add-box{background:var(--red-pale);border-radius:10px;padding:1rem;}
+.add-box h4{font-size:.79rem;font-weight:700;margin-bottom:.75rem;color:var(--red-dark);}
+.add-row{display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap;}
+.add-row .fg{flex:1;min-width:150px;margin-bottom:0;}
+.add-row select{padding:.6rem .5rem;border:1.5px solid var(--gray-mid);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--cream);color:#1a0508;height:42px;cursor:pointer;}
+
+/* Books admin */
+.bk-row{display:flex;align-items:center;gap:.5rem;padding:.6rem .9rem;background:var(--gray-lt);border-radius:8px;margin-bottom:.4rem;}
+.bk-row-info{flex:1;min-width:0;}
+.bk-row-title{font-size:.81rem;font-weight:700;color:#1a0508;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bk-row-sub{font-size:.71rem;color:var(--gray-tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bk-row-cat{font-size:.67rem;padding:2px 7px;border-radius:99px;background:var(--red-pale);color:var(--red-dark);font-weight:700;flex-shrink:0;}
+.bk-row-acts{display:flex;gap:.3rem;flex-shrink:0;}
+
+/* Category admin */
+.cat-row{display:flex;align-items:center;gap:.5rem;padding:.6rem .9rem;background:var(--gray-lt);border-radius:8px;margin-bottom:.4rem;}
+.cat-row-name{flex:1;font-size:.83rem;font-weight:700;color:#1a0508;}
+
+/* Borrows */
+.bo-row{display:flex;flex-direction:column;gap:.3rem;padding:.8rem 1rem;background:var(--gray-lt);border-radius:8px;font-size:.81rem;margin-bottom:.45rem;}
+.bo-row.od{background:var(--danger-bg);}
+.bo-book{font-weight:700;color:#1a0508;}
+.bo-meta{color:var(--gray-tx);display:flex;gap:1rem;flex-wrap:wrap;}
+.od .bo-meta{color:var(--danger-text);font-weight:600;}
+
+/* Reports */
+.rp-row{padding:.8rem 1rem;background:var(--gray-lt);border-radius:8px;font-size:.81rem;margin-bottom:.45rem;}
+.rp-hd{display:flex;justify-content:space-between;margin-bottom:.3rem;gap:.5rem;align-items:flex-start;}
+.rp-book{font-weight:700;color:#1a0508;}
+.rp-dt{color:var(--gray-tx);font-size:.72rem;flex-shrink:0;}
+.rp-meta{color:var(--gray-tx);margin-bottom:.4rem;font-size:.76rem;}
+.rp-body{background:var(--white);border-radius:6px;padding:.5rem .75rem;color:#1a0508;line-height:1.65;font-size:.79rem;white-space:pre-wrap;}
+
+/* Pending reports admin */
+.pr-row{display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:8px;margin-bottom:.4rem;}
+.pr-info{flex:1;min-width:0;}
+.pr-email{font-size:.8rem;font-weight:700;color:#1a0508;word-break:break-all;}
+.pr-book{font-size:.74rem;color:var(--amber-text);}
+
+/* Maintenance admin */
+.maint-toggle-box{background:var(--red-pale);border:1.5px solid var(--red-mid);border-radius:12px;padding:1.25rem;}
+.maint-toggle-hd{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.75rem;}
+.maint-toggle-hd h4{font-size:.9rem;font-weight:700;color:var(--red-dark);}
+/* toggle switch */
+.toggle{position:relative;width:48px;height:26px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--gray-mid);border-radius:99px;cursor:pointer;transition:.25s;}
+.toggle-slider::before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.25s;}
+.toggle input:checked+.toggle-slider{background:var(--red);}
+.toggle input:checked+.toggle-slider::before{transform:translateX(22px);}
+.maint-status{font-size:.78rem;margin-bottom:.9rem;font-weight:600;}
+.maint-status.on{color:var(--red-dark);}
+.maint-status.off{color:var(--gray-tx);}
+
+.empty{text-align:center;padding:2rem;color:var(--gray-tx);font-size:.82rem;}
+.divider{height:1px;background:var(--gray-mid);margin:1.25rem 0;}
+
+@media(max-width:640px){
+  main{padding:1.5rem 1rem;}
+  .hdr{padding:0 .6rem;gap:.25rem;}
+  .logo{font-size:.82rem;letter-spacing:0;}
+  .unm{display:none;}
+  .hdr-mid{gap:.25rem;}
+  .sp-pill{font-size:.6rem;padding:2px 6px;}
+  .btn-hdr{font-size:.66rem;padding:4px 7px;}
+  .uav{width:26px;height:26px;font-size:.7rem;}
+  #pending-banner,#maint-banner{font-size:.75rem;padding:.6rem 1rem;gap:.5rem;}
+}
+</style>
+</head>
+<body>
+
+<div id="screen-loading"><div style="text-align:center"><div class="sp"></div><p>読み込み中...</p></div></div>
+
+<div id="screen-login" class="hidden">
+  <div class="login-card">
+    <div class="logo-login">English<span>Club</span></div>
+    <div class="login-sub">Textbook Lending System</div>
+    <button class="btn-google" onclick="signIn()">
+      <svg class="gi" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      学校用Googleアカウントでログイン
+    </button>
+    <p class="login-note">このシステムは英語サークル会員専用です。<br>登録されたアカウントのみアクセスできます。</p>
+  </div>
+</div>
+
+<div id="screen-unauthorized" class="hidden">
+  <div class="unauth-card">
+    <div class="unauth-icon">🚫</div>
+    <h2>アクセスできません</h2>
+    <p>このアカウントは登録されていません。<br>担当者にお問い合わせください。</p>
+    <p id="unauth-email" style="font-size:.77rem;color:var(--gray-tx);margin-bottom:1.5rem;"></p>
+    <button class="btn btn-ghost btn-full" onclick="doSignOut()">別のアカウントでログイン</button>
+  </div>
+</div>
+
+<!-- MAINTENANCE SCREEN (non-admin) -->
+<div id="screen-maintenance" class="hidden">
+  <div class="maint-card">
+    <div class="maint-icon">🛠️</div>
+    <h2>現在メンテナンス中です</h2>
+    <p>ご不便をおかけします。<br>しばらくしてから再度アクセスしてください。</p>
+    <div id="maint-custom-msg"></div>
+    <div style="margin-top:1.5rem;">
+      <button class="btn btn-ghost" onclick="doSignOut()">ログアウト</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+
+  <header>
+    <div class="hdr">
+      <div class="logo">English<span>Club</span></div>
+      <div class="hdr-mid">
+        <span class="sp-pill av" id="stat-av">— 貸出可</span>
+        <span class="sp-pill bo" id="stat-bo">— 貸出中</span>
+      </div>
+      <div class="hdr-right">
+        <div class="uav" id="uav">?</div>
+        <span class="unm" id="unm"></span>
+        <button class="btn-hdr gold hidden" id="btn-admin" onclick="openAdmin()">⚙ 管理</button>
+        <button class="btn-hdr" onclick="doSignOut()">ログアウト</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Maintenance banner (admin sees this when maintenance is ON) -->
+  <div id="maint-banner" class="hidden">
+    ⚠️ 現在メンテナンスモードが有効です。一般ユーザーはアクセスできません。
+  </div>
+
+  <div id="pending-banner" class="hidden">
+    <span>⚠️ 返却後の報告書が未提出です。提出するまで次の教科書は借りられません。</span>
+    <button class="btn-bnr" onclick="openReport()">📝 今すぐ報告書を書く</button>
+  </div>
+
+  <main>
+    <p class="pg-label">Textbook Lending</p>
+    <h1 class="pg-h1">教科書貸出管理</h1>
+    <div id="books-container"></div>
+  </main>
+
+  <!-- WELCOME -->
+  <div class="mo" id="mw">
+    <div class="modal" style="max-width:540px;">
+      <div class="modal-hd">
+        <h2>📖 はじめに</h2>
+        <button class="modal-close" onclick="closeWelcome()">✕</button>
+      </div>
+      <p class="modal-sub">教科書をお借りになる前に、以下のルールをご確認ください。</p>
+      <ul class="rules-box">
+        <li><span class="rn">1.</span><span>貸出期間は、フォーム提出日から起算して <strong>31日以内</strong> とします。</span></li>
+        <li><span class="rn">2.</span><span>一度に借りることができるのは <strong>1冊のみ</strong> です。</span></li>
+        <li><span class="rn">3.</span><span>貸出終了後、取り組んだ内容について <strong>報告書</strong> の記入・提出をお願いします（簡単で大丈夫です）。</span></li>
+        <li><span class="rn">4.</span><span>貸し出す教材は <strong>学校の備品</strong> です。書き込み等は不可です。返却いただけない場合、教材代をお支払いいただきますので、予めご了承ください。</span></li>
+      </ul>
+      <div class="modal-acts">
+        <button class="btn btn-primary btn-full btn-lg" onclick="closeWelcome()">確認しました</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BORROW -->
+  <div class="mo" id="mb">
+    <div class="modal">
+      <div class="modal-hd">
+        <h2>📚 教科書を借りる</h2>
+        <button class="modal-close" onclick="closeModals()">✕</button>
+      </div>
+      <p class="modal-sub" id="borrow-ttl"></p>
+      <div class="fg">
+        <label>ニックネーム（ページに表示されます）</label>
+        <input type="text" id="inp-nick" placeholder="例：たろう" maxlength="20">
+      </div>
+      <div class="fg">
+        <label>返却予定日</label>
+        <input type="date" id="inp-date">
+        <p class="fg-hint">今日から31日以内で選択してください</p>
+      </div>
+      <div class="modal-acts">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">キャンセル</button>
+        <button class="btn btn-primary" style="flex:1" onclick="confirmBorrow()">借りる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RETURN CONFIRM -->
+  <div class="mo" id="mr">
+    <div class="modal">
+      <div class="modal-hd">
+        <h2>✅ 返却の確認</h2>
+        <button class="modal-close" onclick="closeModals()">✕</button>
+      </div>
+      <p class="modal-sub" id="return-ttl"></p>
+      <p style="font-size:.88rem;color:var(--gray-tx);line-height:1.7;">教科書を返却済みとして記録します。<br>返却後は報告書の提出をお願いします。</p>
+      <div class="modal-acts">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">キャンセル</button>
+        <button class="btn btn-teal" style="flex:1" onclick="confirmReturn()">返却を確定する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RETURN SUCCESS -->
+  <div class="mo" id="mrs">
+    <div class="modal">
+      <div class="modal-hd" style="justify-content:flex-end;">
+        <button class="modal-close" onclick="closeModals()">✕</button>
+      </div>
+      <div class="sicon">🎉</div>
+      <h2 style="text-align:center;">返却が完了しました</h2>
+      <div class="nsteps">✅ ご返却ありがとうございました！<br>教科書を元の棚に戻したら、報告書を提出してください。</div>
+      <div class="rpt-alert">📝 報告書作成のタスクが追加されました。提出するまで次の教科書は借りられません。</div>
+      <div class="modal-acts">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">あとで書く</button>
+        <button class="btn btn-primary" style="flex:1" onclick="closeModals();openReport();">今すぐ書く</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORT -->
+  <div class="mo" id="mrp">
+    <div class="modal">
+      <div class="modal-hd">
+        <h2>📝 報告書の提出</h2>
+        <button class="modal-close" onclick="closeModals()">✕</button>
+      </div>
+      <p class="modal-sub">簡単で構いませんので、ご記入ください。</p>
+      <div class="fg"><label>教科書名</label><input type="text" id="rp-book" readonly></div>
+      <div class="fg"><label>取り組んだページ数</label><input type="text" id="rp-pages" placeholder="例：Unit 1〜3（約45ページ）"></div>
+      <div class="fg"><label>学習内容と感想</label><textarea id="rp-content" placeholder="取り組んだ内容や感想を自由にご記入ください。"></textarea></div>
+      <div class="modal-acts">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">あとで書く</button>
+        <button class="btn btn-primary" style="flex:1" onclick="submitReport()">提出する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOOK EDIT -->
+  <div class="mo" id="m-bk-edit">
+    <div class="modal">
+      <div class="modal-hd">
+        <h2>📖 教科書を編集</h2>
+        <button class="modal-close" onclick="closeModals()">✕</button>
+      </div>
+      <p class="modal-sub" id="bk-edit-sub"></p>
+      <div class="fg"><label>教科書タイトル</label><input type="text" id="bk-edit-name"></div>
+      <div class="fg"><label>サブタイトル・著者など</label><input type="text" id="bk-edit-sub-input"></div>
+      <div class="fg"><label>カテゴリ</label>
+        <select id="bk-edit-cat">
+          <option value="">未分類</option>
+        </select>
+      </div>
+      <div class="modal-acts">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModals()">キャンセル</button>
+        <button class="btn btn-primary" style="flex:1" onclick="saveBkEdit()">保存する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="adm-ov" id="adm-ov" onclick="closeAdmin()"></div>
+  <div id="panel-admin">
+    <div class="adm-hd">
+      <h2>⚙ 管理パネル</h2>
+      <button class="btn-x" onclick="closeAdmin()">✕</button>
+    </div>
+    <div class="adm-tabs">
+      <div class="atab active" onclick="swTab(this,'users')">👥 ユーザー</div>
+      <div class="atab" onclick="swTab(this,'books')">📖 教科書</div>
+      <div class="atab" onclick="swTab(this,'borrows')">📚 貸出</div>
+      <div class="atab" onclick="swTab(this,'reports')">📝 報告書</div>
+      <div class="atab" onclick="swTab(this,'history')">📋 履歴</div>
+      <div class="atab" onclick="swTab(this,'maint')">⚡ 緊急停止</div>
+    </div>
+    <div class="adm-body">
+
+      <!-- USERS -->
+      <div class="asec active" id="asec-users">
+        <div class="asec-ttl">登録ユーザー</div>
+        <div class="user-list" id="adm-users"></div>
+        <div class="add-box" id="add-user-box">
+          <h4>➕ ユーザーを追加</h4>
+          <div class="add-row">
+            <div class="fg"><label>メールアドレス</label>
+              <input type="email" id="new-email" placeholder="example@school.jp">
+            </div>
+            <select id="new-role" style="align-self:flex-end;">
+              <option value="member">メンバー</option>
+              <option value="admin">管理者</option>
+            </select>
+            <button class="btn btn-primary" style="align-self:flex-end;" onclick="addUser()">追加</button>
+          </div>
+        </div>
+        <p id="user-mgmt-note" class="hidden" style="font-size:.78rem;color:var(--gray-tx);margin-top:.75rem;line-height:1.6;">ユーザーの追加・削除・権限変更はシステム管理者のみ操作できます。</p>
+      </div>
+
+      <!-- BOOKS -->
+      <div class="asec" id="asec-books">
+        <div class="asec-ttl">教科書の管理</div>
+        <div id="adm-books-list"></div>
+        <div class="add-box" style="margin-top:1rem;">
+          <h4>➕ 教科書を追加</h4>
+          <div class="fg"><label>タイトル</label>
+            <input type="text" id="new-bk-title" placeholder="教科書のタイトル">
+          </div>
+          <div class="fg"><label>サブタイトル・著者など</label>
+            <input type="text" id="new-bk-sub" placeholder="例：TEX加藤 著">
+          </div>
+          <div class="fg" style="margin-bottom:.75rem;"><label>カテゴリ</label>
+            <select id="new-bk-cat"><option value="">未分類</option></select>
+          </div>
+          <button class="btn btn-primary" onclick="addBook()">追加する</button>
+        </div>
+        <div class="divider"></div>
+        <div class="asec-ttl">カテゴリの管理</div>
+        <div id="adm-cats-list"></div>
+        <div class="add-box">
+          <h4>➕ カテゴリを追加</h4>
+          <div class="add-row">
+            <div class="fg"><label>カテゴリ名</label>
+              <input type="text" id="new-cat-name" placeholder="例：リスニング">
+            </div>
+            <button class="btn btn-primary" style="align-self:flex-end;" onclick="addCategory()">追加</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BORROWS -->
+      <div class="asec" id="asec-borrows">
+        <div class="asec-ttl">現在の貸出状況</div>
+        <div id="adm-borrows"></div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="asec" id="asec-reports">
+        <div class="asec-ttl">⚠️ 報告書 未提出者</div>
+        <div id="adm-pending-reports"></div>
+        <div class="divider"></div>
+        <div class="asec-ttl">提出済み報告書</div>
+        <div id="adm-reports"></div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="asec" id="asec-history">
+        <div class="asec-ttl">貸出履歴（本名で表示）</div>
+        <div id="adm-history"></div>
+      </div>
+
+      <!-- MAINTENANCE -->
+      <div class="asec" id="asec-maint">
+        <div class="asec-ttl">緊急停止 / メンテナンスモード</div>
+        <div class="maint-toggle-box">
+          <div class="maint-toggle-hd">
+            <h4>メンテナンスモード</h4>
+            <label class="toggle">
+              <input type="checkbox" id="maint-toggle" onchange="toggleMaintenance()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <p class="maint-status off" id="maint-status-txt">現在：通常稼働中</p>
+          <div class="fg">
+            <label>ユーザーへのメッセージ（任意）</label>
+            <input type="text" id="maint-msg-input" placeholder="例：本日は緊急のため停止しています。">
+            <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem;">
+              <button class="btn btn-ghost" style="font-size:.7rem;padding:4px 10px;" onclick="insertMaintTpl('emergency')">⚡ 緊急停止</button>
+              <button class="btn btn-ghost" style="font-size:.7rem;padding:4px 10px;" onclick="insertMaintTpl('maintenance')">🔧 メンテナンス</button>
+              <button class="btn btn-ghost" style="font-size:.7rem;padding:4px 10px;" onclick="insertMaintTpl('time')">🕐 現在時刻を挿入</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="saveMaintMsg()">メッセージを更新</button>
+        </div>
+        <p style="font-size:.77rem;color:var(--gray-tx);margin-top:1rem;line-height:1.7;">
+          ⚡ ONにすると、管理者以外のユーザーはサイトにアクセスできなくなります。<br>
+          管理者は通常通り操作できます。
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// =====================================================
+// 🔧 Firebase 設定 — ここを書き換えてください
+// =====================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAa3fYPhYmDGgXDw3BG76PPyuoYvSYsp3s",
+  authDomain: "english-textlending.firebaseapp.com",
+  databaseURL: "https://english-textlending-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "english-textlending",
+  storageBucket: "english-textlending.firebasestorage.app",
+  messagingSenderId: "84801336014",
+  appId: "1:84801336014:web:c725c16b3f9f106ac1969f",
+  measurementId: "G-XFG4WPD3BD"
+};
+// =====================================================
+
+// ① XSSサニタイズ関数（HTML特殊文字をエスケープ）
+function s(str){
+  if(str==null) return '—';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+const INIT_CATS = ["リスニング","リーディング","問題集","総合対策本"];
+const SUPERADMIN = 'k24066@std.nagaokauniv.ac.jp';
+
+// LINEブラウザ検出
+(function(){
+  const ua=navigator.userAgent||'';
+  if(/Line\//i.test(ua)){
+    document.body.innerHTML=`
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#8C0D21,#B5122B);padding:2rem;">
+        <div style="background:#fff;border-radius:20px;padding:2.5rem 2rem;max-width:380px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.3);">
+          <div style="font-size:2.5rem;margin-bottom:1rem;">🌐</div>
+          <h2 style="font-family:'Noto Sans JP',sans-serif;font-size:1.1rem;color:#8C0D21;margin-bottom:.75rem;font-weight:700;">外部ブラウザで開いてください</h2>
+          <p style="font-size:.85rem;color:#5f5e5a;line-height:1.8;margin-bottom:1.5rem;">LINEのブラウザではGoogleログインが利用できません。<br>右上のメニュー（⋮）→「外部ブラウザで開く」をタップしてください。</p>
+          <div style="background:#f1efe8;border-radius:8px;padding:.75rem 1rem;font-size:.78rem;color:#854f0b;line-height:1.6;">Chrome または Safari で開いてください</div>
+        </div>
+      </div>`;
+  }
+})();
+
+firebase.initializeApp(firebaseConfig);
+
+const appCheck = firebase.appCheck();
+appCheck.activate(
+  new firebase.appCheck.ReCaptchaV3Provider(6LdIveksAAAAAIchLQBZRf_7Odyt7hYWc0Jyh6YX
+),
+  true
+);
+
+const auth=firebase.auth(), db=firebase.database();
+let me=null, myRole=null, books={}, cats={}, pending=null, curId=null, retTitle='', editBkId=null;
+
+function ekey(e){return e.replace(/\./g,',').replace(/@/g,'_at_');}
+function dkey(k){return k.replace(/_at_/g,'@').replace(/,/g,'.');}
+function fmt(s){if(!s)return'—';const[y,m,d]=s.split('-');return`${y}年${m}月${d}日`;}
+function today(){return new Date().toISOString().split('T')[0];}
+function maxD(){const d=new Date();d.setDate(d.getDate()+31);return d.toISOString().split('T')[0];}
+function isOD(d){return d&&d<today();}
+function esc(s){return(s||'').replace(/'/g,"\\'");}
+function show(id){
+  ['screen-loading','screen-login','screen-unauthorized','screen-maintenance','app'].forEach(x=>
+    document.getElementById(x).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+auth.onAuthStateChanged(async user=>{
+  if(!user){show('screen-login');return;}
+  me=user;
+  const k=ekey(user.email);
+  let snap=await db.ref('allowedUsers/'+k).once('value');
+  if(!snap.exists()){
+    const all=await db.ref('allowedUsers').once('value');
+    if(!all.exists()){
+      await db.ref('allowedUsers/'+k).set({role:'admin',addedAt:Date.now()});
+      myRole='admin';
+    } else {
+      document.getElementById('unauth-email').textContent=user.email;
+      show('screen-unauthorized');return;
+    }
+  } else { myRole=snap.val().role||'member'; }
+
+  // メンテナンスチェック（管理者はスルー）
+  if(myRole!=='admin'){
+    const ms=await db.ref('system/maintenance').once('value');
+    if(ms.exists()&&ms.val().enabled){
+      const msg=ms.val().message||'';
+      const el=document.getElementById('maint-custom-msg');
+      if(msg){el.textContent=msg;el.style.display='block';}
+      show('screen-maintenance');return;
+    }
+  }
+
+  // 初期カテゴリ
+  const csSnap=await db.ref('categories').once('value');
+  if(!csSnap.exists()){
+    const initCats={};
+    INIT_CATS.forEach((n,i)=>{ initCats['cat_'+(i+1)]={name:n,order:i}; });
+    await db.ref('categories').set(initCats);
+  }
+
+  // 初期書籍（なければ空で開始）
+  const bs=await db.ref('books').once('value');
+  if(!bs.exists()) await db.ref('books').set({});
+
+  show('app'); renderUser(); startListeners();
+  if(!sessionStorage.getItem('welcomed')) document.getElementById('mw').classList.add('open');
+});
+
+function renderUser(){
+  const av=document.getElementById('uav');
+  if(me.photoURL) av.innerHTML=`<img src="${me.photoURL}" alt="">`;
+  else av.textContent=(me.displayName||me.email||'?')[0].toUpperCase();
+  document.getElementById('unm').textContent=me.displayName||me.email.split('@')[0];
+  if(myRole==='admin'){
+    document.getElementById('btn-admin').classList.remove('hidden');
+    db.ref('admins/'+me.uid).set(true);
+  }
+}
+
+function startListeners(){
+  db.ref('books').on('value',snap=>{
+    books=snap.val()||{};
+    renderBooks(); renderStats(); renderAdmBorrows(); renderAdmBooksList();
+  });
+  db.ref('categories').on('value',snap=>{
+    cats=snap.val()||{};
+    renderBooks(); renderAdmBooksList(); renderAdmCatsList(); populateCatSelects();
+  });
+  db.ref('pendingReports/'+ekey(me.email)).on('value',snap=>{
+    pending=snap.val();
+    document.getElementById('pending-banner').classList.toggle('hidden',!pending);
+    renderBooks();
+  });
+  db.ref('system/maintenance').on('value',snap=>{
+    const on=snap.exists()&&snap.val().enabled;
+    if(on&&myRole!=='admin'){
+      // 一般ユーザーはリアルタイムでメンテナンス画面へ
+      const msg=snap.val().message||'';
+      const el=document.getElementById('maint-custom-msg');
+      if(el){el.textContent=msg;el.style.display=msg?'block':'none';}
+      show('screen-maintenance');
+      return;
+    }
+    document.getElementById('maint-banner').classList.toggle('hidden',!on||myRole!=='admin');
+    if(myRole==='admin'){
+      const tog=document.getElementById('maint-toggle');
+      if(tog) tog.checked=!!on;
+      const st=document.getElementById('maint-status-txt');
+      if(st){st.textContent=on?'現在：メンテナンス中（停止中）':'現在：通常稼働中';st.className='maint-status '+(on?'on':'off');}
+      const mi=document.getElementById('maint-msg-input');
+      if(mi&&snap.exists()) mi.value=snap.val().message||'';
+    }
+  });
+  // ユーザー削除リアルタイム検知（一般ユーザー用）
+  db.ref('allowedUsers/'+ekey(me.email)).on('value',snap=>{
+    if(!snap.exists()&&myRole!=='admin'){
+      closeModals();
+      show('screen-unauthorized');
+      document.getElementById('unauth-email').textContent=me.email;
+    }
+  });
+  if(myRole==='admin'){
+    db.ref('allowedUsers').on('value',snap=>renderAdmUsers(snap.val()||{}));
+    db.ref('reports').on('value',snap=>renderAdmReports(snap.val()||{}));
+    db.ref('pendingReports').on('value',snap=>renderAdmPendingReports(snap.val()||{}));
+    db.ref('borrowHistory').on('value',snap=>renderAdmHistory(snap.val()||{}));
+  }
+}
+
+function signIn(){
+  const p=new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(p).catch(e=>alert('ログイン失敗: '+e.message));
+}
+function doSignOut(){ auth.signOut().then(()=>location.reload()); }
+function closeWelcome(){
+  document.getElementById('mw').classList.remove('open');
+  sessionStorage.setItem('welcomed','1');
+}
+
+/* ── RENDER BOOKS by category ── */
+function renderBooks(){
+  const container=document.getElementById('books-container');
+  container.innerHTML='';
+  const catOrder=Object.entries(cats).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
+  // "未分類" group
+  const groups={};
+  catOrder.forEach(([k])=>groups[k]=[]);
+  groups['__none']=[]; // uncategorized
+
+  Object.entries(books).forEach(([id,b])=>{
+    const cid=b.category&&cats[b.category]?b.category:'__none';
+    if(!groups[cid])groups[cid]=[];
+    groups[cid].push([id,b]);
+  });
+
+  // render each group
+  [...catOrder.map(([k])=>k),'__none'].forEach(cid=>{
+    const list=groups[cid]||[];
+    if(!list.length) return;
+    const catName=cid==='__none'?'その他':(cats[cid]?.name||'その他');
+    const sec=document.createElement('div');
+    sec.className='cat-section';
+    sec.innerHTML=`<div class="cat-header">
+      <span class="cat-title">${s(catName)}</span>
+      <span class="cat-count">${list.length}冊</span>
+      <span class="cat-line"></span>
+    </div>
+    <div class="books-grid" id="grid-${cid}"></div>`;
+    container.appendChild(sec);
+    const grid=sec.querySelector('.books-grid');
+    list.forEach(([id,b],i)=>{
+      const bw=b.status==='borrowed';
+      const mine=bw&&b.borrowerEmail===me.email;
+      const od=bw&&isOD(b.returnDate);
+      const canBorrow=!bw&&!pending;
+      const canReturn=mine;
+      let bdg='av',lbl='貸出可';
+      if(od){bdg='od';lbl='延滞中';}else if(bw){bdg='bo';lbl='貸出中';}
+      let info='';
+      if(bw){
+        const cls=mine?'mine':od?'ov':'other';
+        const who=mine?'<strong>あなた</strong>が借りています':`<strong>${s(b.borrowerNickname)}</strong>が借りています`;
+        const due=`<strong>返却日：</strong>${fmt(b.returnDate)}${od?' ⚠️ 延滞中':''}`;
+        info=`<div class="bi ${cls}"><div>${who}</div><div>${due}</div></div>`;
+      }
+      let act='';
+      if(!bw) act=`<button class="btn btn-card btn-primary" onclick="openBorrow('${id}','${esc(b.title)}')" ${canBorrow?'':'disabled'}>借りる</button>`;
+      else if(canReturn) act=`<button class="btn btn-card btn-teal" onclick="openReturn('${id}','${esc(b.title)}')">返却する</button>`;
+      else act=`<span class="other-note">他の方が借りています</span>`;
+      const card=document.createElement('div');
+      card.className='book-card'+(od?' od':'');
+      card.innerHTML=`
+        <div class="card-top">
+          <span class="bk-num">No.${String(i+1).padStart(2,'0')}</span>
+          <span class="badge ${bdg}">${lbl}</span>
+        </div>
+        <div><div class="bk-title">${s(b.title)}</div><div class="bk-sub">${s(b.sub)}</div></div>
+        ${info}
+        <div class="card-acts">${act}</div>`;
+      grid.appendChild(card);
+    });
+  });
+
+  if(!Object.keys(books).length){
+    container.innerHTML='<p style="color:var(--gray-tx);font-size:.9rem;">教科書が登録されていません。管理パネルから追加してください。</p>';
+  }
+}
+
+function renderStats(){
+  let av=0,bo=0;
+  Object.values(books).forEach(b=>b.status==='borrowed'?bo++:av++);
+  document.getElementById('stat-av').textContent=`${av}冊 貸出可`;
+  document.getElementById('stat-bo').textContent=`${bo}冊 貸出中`;
+}
+
+/* ── Borrow ── */
+function openBorrow(id,title){
+  if(pending){alert('報告書を提出してから借りてください。');return;}
+  if(Object.values(books).some(b=>b.status==='borrowed'&&b.borrowerEmail===me.email)){
+    alert('すでに1冊借りています。返却してから借りてください。');return;}
+  curId=id;
+  document.getElementById('borrow-ttl').textContent=title;
+  document.getElementById('inp-nick').value='';
+  document.getElementById('inp-date').value='';
+  document.getElementById('inp-date').min=today();
+  document.getElementById('inp-date').max=maxD();
+  document.getElementById('mb').classList.add('open');
+}
+function confirmBorrow(){
+  const nick=document.getElementById('inp-nick').value.trim();
+  const date=document.getElementById('inp-date').value;
+  if(!nick){alert('ニックネームを入力してください。');return;}
+  if(!date){alert('返却予定日を選択してください。');return;}
+  if(date>maxD()){alert('返却日は31日以内で選択してください。');return;}
+  db.ref('books/'+curId).update({status:'borrowed',borrowerEmail:me.email,borrowerNickname:nick,borrowerRealName:me.displayName||me.email,borrowDate:today(),returnDate:date});
+  closeModals();
+}
+
+/* ── Return ── */
+function openReturn(id,title){
+  curId=id;retTitle=title;
+  document.getElementById('return-ttl').textContent=title;
+  document.getElementById('mr').classList.add('open');
+}
+function confirmReturn(){
+  const bk=books[curId]||{};
+  // 履歴保存
+  db.ref('borrowHistory/hist_'+Date.now()).set({
+    bookId:curId, bookTitle:retTitle,
+    borrowerEmail:me.email,
+    borrowerNickname:bk.borrowerNickname||'—',
+    borrowerRealName:bk.borrowerRealName||me.displayName||me.email,
+    borrowDate:bk.borrowDate||null,
+    returnDate:today()
+  });
+  db.ref('pendingReports/'+ekey(me.email)).set({bookId:curId,bookTitle:retTitle,borrowDate:bk.borrowDate||null,returnDate:today(),borrowerRealName:me.displayName||me.email});
+  db.ref('books/'+curId).update({status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null});
+  closeModals();
+  document.getElementById('mrs').classList.add('open');
+}
+
+/* ── Report ── */
+function openReport(){
+  if(!pending)return;
+  document.getElementById('rp-book').value=pending.bookTitle||'';
+  document.getElementById('rp-pages').value='';
+  document.getElementById('rp-content').value='';
+  document.getElementById('mrp').classList.add('open');
+}
+function submitReport(){
+  const pages=document.getElementById('rp-pages').value.trim();
+  const content=document.getElementById('rp-content').value.trim();
+  if(!pages){alert('取り組んだページ数を入力してください。');return;}
+  if(!content){alert('学習内容と感想を入力してください。');return;}
+  db.ref('reports/report_'+Date.now()).set({
+    bookId:pending.bookId,bookTitle:pending.bookTitle,
+    borrowerEmail:me.email,borrowerRealName:me.displayName||me.email,
+    borrowDate:pending.borrowDate,returnDate:pending.returnDate,
+    pages,content,submittedAt:today()
+  });
+  db.ref('pendingReports/'+ekey(me.email)).remove();
+  closeModals();
+  alert('✅ 報告書を提出しました。ありがとうございました！');
+}
+
+/* ② モーダルは✕ボタン・キャンセルのみで閉じる（外クリックで閉じない） */
+function closeModals(){
+  document.querySelectorAll('.mo').forEach(el=>el.classList.remove('open'));
+  curId=null; editBkId=null;
+}
+
+/* ── Admin ── */
+function openAdmin(){ document.getElementById('panel-admin').classList.add('open'); document.getElementById('adm-ov').classList.add('open'); }
+function closeAdmin(){ document.getElementById('panel-admin').classList.remove('open'); document.getElementById('adm-ov').classList.remove('open'); }
+function swTab(el,tab){
+  document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.asec').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('asec-'+tab).classList.add('active');
+  if(tab==='borrows')renderAdmBorrows();
+}
+
+/* ── Users ── */
+function renderAdmUsers(users){
+  const el=document.getElementById('adm-users');
+  const entries=Object.entries(users);
+  if(!entries.length){el.innerHTML='<p class="empty">登録ユーザーがいません</p>';return;}
+  const isSuperAdmin=me.email===SUPERADMIN;
+  el.innerHTML=entries.map(([k,v])=>{
+    const email=dkey(k),isSelf=email===me.email;
+    const role=v.role||'member';
+    const roleLabel=role==='admin'?'管理者':'メンバー';
+    let actions='';
+    if(isSelf){
+      actions='<span style="font-size:.71rem;color:var(--gray-tx);">（自分）</span>';
+    } else if(isSuperAdmin){
+      // スーパー管理者のみ：役割変更＋削除
+      actions=`<button class="btn" style="background:var(--red-pale);color:var(--red-dark);font-size:.71rem;padding:4px 9px;" onclick="toggleRole('${k}','${role}')">${role==='admin'?'→メンバー':'→管理者'}</button>
+        <button class="btn btn-danger" style="padding:4px 9px;font-size:.71rem;" onclick="removeUser('${k}')">削除</button>`;
+    } else {
+      // 他の管理者：操作不可
+      actions='<span style="font-size:.71rem;color:var(--gray-tx);">—</span>';
+    }
+    return `<div class="user-row">
+      <span class="ue">${s(email)}</span>
+      <span class="urole ${role}">${roleLabel}</span>
+      <div style="display:flex;gap:.3rem;flex-shrink:0;">${actions}</div>
+    </div>`;
+  }).join('');
+}
+function toggleRole(k,currentRole){
+  const newRole=currentRole==='admin'?'member':'admin';
+  const email=dkey(k);
+  if(!confirm(`${email} の役割を「${newRole==='admin'?'管理者':'メンバー'}」に変更しますか？`))return;
+  db.ref('allowedUsers/'+k+'/role').set(newRole);
+}
+function addUser(){
+  if(me.email!==SUPERADMIN){alert('ユーザーの追加はk24066のみ操作できます。');return;}
+  const email=document.getElementById('new-email').value.trim().toLowerCase();
+  const role=document.getElementById('new-role').value;
+  if(!email||!email.includes('@')){alert('有効なメールアドレスを入力してください。');return;}
+  db.ref('allowedUsers/'+ekey(email)).set({role,addedAt:Date.now()});
+  document.getElementById('new-email').value='';
+}
+function removeUser(k){
+  if(me.email!==SUPERADMIN){alert('ユーザーの削除はk24066のみ操作できます。');return;}
+  if(!confirm(`${dkey(k)} を削除しますか？`))return;
+  db.ref('allowedUsers/'+k).remove();
+}
+
+/* ── Categories ── */
+function populateCatSelects(){
+  const opts=['<option value="">未分類</option>',
+    ...Object.entries(cats).sort((a,b)=>(a[1].order||0)-(b[1].order||0))
+      .map(([k,v])=>`<option value="${k}">${v.name}</option>`)
+  ].join('');
+  ['new-bk-cat','bk-edit-cat'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const cur=el.value;el.innerHTML=opts;el.value=cur;
+  });
+}
+function renderAdmCatsList(){
+  const el=document.getElementById('adm-cats-list');if(!el)return;
+  const entries=Object.entries(cats).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
+  if(!entries.length){el.innerHTML='<p class="empty">カテゴリがありません</p>';return;}
+  el.innerHTML=entries.map(([k,v])=>`
+    <div class="cat-row">
+      <span class="cat-row-name">${s(v.name)}</span>
+      <button class="btn btn-danger" style="padding:4px 10px;font-size:.71rem;" onclick="deleteCat('${k}')">削除</button>
+    </div>`).join('');
+}
+function addCategory(){
+  const name=document.getElementById('new-cat-name').value.trim();
+  if(!name){alert('カテゴリ名を入力してください。');return;}
+  const maxOrder=Object.values(cats).reduce((m,c)=>Math.max(m,(c.order||0)),0);
+  db.ref('categories/cat_'+Date.now()).set({name,order:maxOrder+1});
+  document.getElementById('new-cat-name').value='';
+}
+function deleteCat(k){
+  if(!confirm(`カテゴリ「${cats[k]?.name}」を削除しますか？\n該当の教科書は「未分類」になります。`))return;
+  db.ref('categories/'+k).remove();
+  Object.entries(books).forEach(([id,b])=>{
+    if(b.category===k) db.ref('books/'+id+'/category').remove();
+  });
+}
+
+/* ── Books ── */
+function renderAdmBooksList(){
+  const el=document.getElementById('adm-books-list');if(!el)return;
+  const entries=Object.entries(books);
+  if(!entries.length){el.innerHTML='<p class="empty">教科書が登録されていません</p>';return;}
+  el.innerHTML=entries.map(([id,b])=>{
+    const catName=b.category&&cats[b.category]?cats[b.category].name:'未分類';
+    const isBw=b.status==='borrowed';
+    return `<div class="bk-row">
+      <div class="bk-row-info">
+        <div class="bk-row-title">${s(b.title)}</div>
+        <div class="bk-row-sub">${s(b.sub)}</div>
+      </div>
+      <span class="bk-row-cat">${catName}</span>
+      <div class="bk-row-acts">
+        <button class="btn" style="background:var(--red-pale);color:var(--red-dark);font-size:.71rem;padding:4px 9px;" onclick="openBkEdit('${id}')">編集</button>
+        <button class="btn btn-danger" style="font-size:.71rem;padding:4px 9px;" onclick="deleteBook('${id}')" ${isBw?'disabled title="貸出中は削除不可"':''}>削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function openBkEdit(id){
+  const b=books[id];if(!b)return;
+  editBkId=id;
+  document.getElementById('bk-edit-sub').textContent=b.title;
+  document.getElementById('bk-edit-name').value=b.title;
+  document.getElementById('bk-edit-sub-input').value=b.sub||'';
+  populateCatSelects();
+  document.getElementById('bk-edit-cat').value=b.category||'';
+  document.getElementById('m-bk-edit').classList.add('open');
+}
+function saveBkEdit(){
+  const title=document.getElementById('bk-edit-name').value.trim();
+  const sub=document.getElementById('bk-edit-sub-input').value.trim();
+  const cat=document.getElementById('bk-edit-cat').value;
+  if(!title){alert('タイトルを入力してください。');return;}
+  db.ref('books/'+editBkId).update({title,sub,category:cat||null});
+  closeModals();
+}
+function deleteBook(id){
+  const b=books[id];if(!b)return;
+  if(b.status==='borrowed'){alert('貸出中の教科書は削除できません。');return;}
+  if(!confirm(`「${b.title}」を削除しますか？`))return;
+  db.ref('books/'+id).remove();
+}
+function addBook(){
+  const title=document.getElementById('new-bk-title').value.trim();
+  const sub=document.getElementById('new-bk-sub').value.trim();
+  const cat=document.getElementById('new-bk-cat').value;
+  if(!title){alert('タイトルを入力してください。');return;}
+  db.ref('books/'+`book_${Date.now()}`).set({title,sub,category:cat||null,status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null});
+  document.getElementById('new-bk-title').value='';
+  document.getElementById('new-bk-sub').value='';
+}
+
+/* ── Borrows ── */
+function renderAdmBorrows(){
+  const el=document.getElementById('adm-borrows');if(!el)return;
+  const bw=Object.entries(books).filter(([,b])=>b.status==='borrowed');
+  if(!bw.length){el.innerHTML='<p class="empty">現在貸出中の教科書はありません</p>';return;}
+  el.innerHTML=bw.map(([id,b])=>{
+    const od=isOD(b.returnDate);
+    return `<div class="bo-row${od?' od':''}">
+      <div class="bo-book">${s(b.title)}</div>
+      <div class="bo-meta">
+        <span>👤 ${s(b.borrowerRealName||b.borrowerNickname)}（${s(b.borrowerNickname)}）</span>
+        <span>📅 ${fmt(b.returnDate)}${od?' ⚠️ 延滞':''}</span>
+      </div>
+      <div style="margin-top:.4rem;">
+        <button class="btn btn-danger" style="font-size:.73rem;padding:4px 11px;" onclick="forceReturn('${id}')">強制返却</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function forceReturn(id){
+  const b=books[id];if(!b)return;
+  if(!confirm(`「${b.title}」を強制返却しますか？`))return;
+  db.ref('borrowHistory/hist_'+Date.now()).set({
+    bookId:id, bookTitle:b.title,
+    borrowerEmail:b.borrowerEmail||'—',
+    borrowerNickname:b.borrowerNickname||'—',
+    borrowerRealName:b.borrowerRealName||b.borrowerEmail||'—',
+    borrowDate:b.borrowDate||null,
+    returnDate:today(),
+    forcedReturn:true
+  });
+  if(b.borrowerEmail)db.ref('pendingReports/'+ekey(b.borrowerEmail)).remove();
+  db.ref('books/'+id).update({status:'available',borrowerEmail:null,borrowerNickname:null,borrowDate:null,returnDate:null});
+}
+
+/* ── Reports ── */
+function renderAdmPendingReports(prs){
+  const el=document.getElementById('adm-pending-reports');if(!el)return;
+  const entries=Object.entries(prs);
+  if(!entries.length){el.innerHTML='<p class="empty">未提出者はいません ✅</p>';return;}
+  el.innerHTML=entries.map(([k,v])=>`
+    <div class="pr-row">
+      <div class="pr-info">
+        <div class="pr-email">${s(v.borrowerRealName||dkey(k))}</div>
+        <div class="pr-book">📚 ${s(v.bookTitle)} ｜ 返却日：${fmt(v.returnDate)}</div>
+      </div>
+    </div>`).join('');
+}
+function renderAdmReports(reps){
+  const el=document.getElementById('adm-reports');if(!el)return;
+  const entries=Object.entries(reps).reverse();
+  if(!entries.length){el.innerHTML='<p class="empty">報告書はまだありません</p>';return;}
+  el.innerHTML=entries.map(([,r])=>`
+    <div class="rp-row">
+      <div class="rp-hd"><span class="rp-book">${s(r.bookTitle)}</span><span class="rp-dt">提出：${fmt(r.submittedAt)}</span></div>
+      <div class="rp-meta">👤 <strong>${s(r.borrowerRealName||r.borrowerEmail)}</strong><br>📧 ${s(r.borrowerEmail)} ｜ 📄 ${s(r.pages)}</div>
+      <div class="rp-body">${s(r.content)}</div>
+    </div>`).join('');
+}
+
+function renderAdmHistory(hist){
+  const el=document.getElementById('adm-history');if(!el)return;
+  const entries=Object.entries(hist).sort((a,b)=>b[0].localeCompare(a[0]));
+  if(!entries.length){el.innerHTML='<p class="empty">貸出履歴がありません</p>';return;}
+  el.innerHTML=entries.map(([,h])=>`
+    <div class="rp-row">
+      <div class="rp-hd">
+        <span class="rp-book">${s(h.bookTitle)}</span>
+        <span class="rp-dt">返却：${fmt(h.returnDate)}</span>
+      </div>
+      <div class="rp-meta">
+        👤 <strong>${s(h.borrowerRealName)}</strong>（${s(h.borrowerNickname)}）<br>
+        📧 ${s(h.borrowerEmail)}<br>
+        📅 貸出：${fmt(h.borrowDate)} → 返却：${fmt(h.returnDate)}
+        ${h.forcedReturn?'&nbsp;<span style="color:var(--danger-text);font-size:.7rem;font-weight:700;">強制返却</span>':''}
+      </div>
+    </div>`).join('');
+}
+
+/* ── Maintenance ── */
+function nowJST(){
+  const d=new Date();
+  const jst=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Tokyo'}));
+  const mm=String(jst.getMonth()+1).padStart(2,'0');
+  const dd=String(jst.getDate()).padStart(2,'0');
+  const hh=String(jst.getHours()).padStart(2,'0');
+  const mi=String(jst.getMinutes()).padStart(2,'0');
+  return `${mm}月${dd}日 ${hh}:${mi}`;
+}
+function insertMaintTpl(type){
+  const el=document.getElementById('maint-msg-input');
+  const t=nowJST();
+  const tpls={
+    emergency:`緊急対応のため一時停止しています。【停止開始：${t}】`,
+    maintenance:`システムメンテナンス中です。しばらくお待ちください。【開始：${t}】`,
+    time:t
+  };
+  if(type==='time'){
+    el.value=el.value+t;
+  } else {
+    el.value=tpls[type]||'';
+  }
+}
+function toggleMaintenance(){
+  const on=document.getElementById('maint-toggle').checked;
+  const msg=document.getElementById('maint-msg-input').value.trim();
+  db.ref('system/maintenance').set({enabled:on,message:msg});
+}
+function saveMaintMsg(){
+  const on=document.getElementById('maint-toggle').checked;
+  const msg=document.getElementById('maint-msg-input').value.trim();
+  db.ref('system/maintenance').set({enabled:on,message:msg});
+  alert('メッセージを更新しました。');
+}
+
+// スーパー管理者以外はユーザー管理UIを非表示
+(function initUserMgmt(){
+  const check=setInterval(()=>{
+    if(!me) return;
+    clearInterval(check);
+    const box=document.getElementById('add-user-box');
+    const note=document.getElementById('user-mgmt-note');
+    if(!box||!note) return;
+    if(me.email!==SUPERADMIN){
+      box.classList.add('hidden');
+      note.classList.remove('hidden');
+    }
+  },300);
+})();
+</script>
+</body>
+</html>
