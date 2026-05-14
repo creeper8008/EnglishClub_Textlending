@@ -627,7 +627,7 @@ firebase.initializeApp(firebaseConfig);
 const appCheck = firebase.appCheck();
 appCheck.activate(
   new firebase.appCheck.ReCaptchaV3Provider(6LdIveksAAAAAIchLQBZRf_7Odyt7hYWc0Jyh6YX),
-  true // 自動トークン更新
+  true
 );
 
 const auth=firebase.auth(), db=firebase.database();
