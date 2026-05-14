@@ -3,9 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googleapis.com https://apis.google.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;
+  img-src 'self' data: https://lh3.googleusercontent.com;
+  frame-src https://accounts.google.com;
+">
 <title>英語サークル｜教科書貸出管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Outfit:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <style>
@@ -588,6 +598,17 @@ const firebaseConfig = {
 };
 // =====================================================
 
+// ① XSSサニタイズ関数（HTML特殊文字をエスケープ）
+function s(str){
+  if(str==null) return '—';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
 const INIT_CATS = ["リスニング","リーディング","問題集","総合対策本"];
 const SUPERADMIN = 'k24066@std.nagaokauniv.ac.jp';
 
@@ -608,6 +629,15 @@ const SUPERADMIN = 'k24066@std.nagaokauniv.ac.jp';
 })();
 
 firebase.initializeApp(firebaseConfig);
+
+// ④ Firebase App Check（reCAPTCHA v3）
+// ※ reCAPTCHAサイトキーを取得後、'YOUR_RECAPTCHA_SITE_KEY' を置き換えてください
+const appCheck = firebase.appCheck();
+appCheck.activate(
+  new firebase.appCheck.ReCaptchaV3Provider('YOUR_RECAPTCHA_SITE_KEY'),
+  true // 自動トークン更新
+);
+
 const auth=firebase.auth(), db=firebase.database();
 let me=null, myRole=null, books={}, cats={}, pending=null, curId=null, retTitle='', editBkId=null;
 
@@ -762,7 +792,7 @@ function renderBooks(){
     const sec=document.createElement('div');
     sec.className='cat-section';
     sec.innerHTML=`<div class="cat-header">
-      <span class="cat-title">${catName}</span>
+      <span class="cat-title">${s(catName)}</span>
       <span class="cat-count">${list.length}冊</span>
       <span class="cat-line"></span>
     </div>
@@ -780,7 +810,7 @@ function renderBooks(){
       let info='';
       if(bw){
         const cls=mine?'mine':od?'ov':'other';
-        const who=mine?'<strong>あなた</strong>が借りています':`<strong>${b.borrowerNickname||'—'}</strong>が借りています`;
+        const who=mine?'<strong>あなた</strong>が借りています':`<strong>${s(b.borrowerNickname)}</strong>が借りています`;
         const due=`<strong>返却日：</strong>${fmt(b.returnDate)}${od?' ⚠️ 延滞中':''}`;
         info=`<div class="bi ${cls}"><div>${who}</div><div>${due}</div></div>`;
       }
@@ -795,7 +825,7 @@ function renderBooks(){
           <span class="bk-num">No.${String(i+1).padStart(2,'0')}</span>
           <span class="badge ${bdg}">${lbl}</span>
         </div>
-        <div><div class="bk-title">${b.title}</div><div class="bk-sub">${b.sub||''}</div></div>
+        <div><div class="bk-title">${s(b.title)}</div><div class="bk-sub">${s(b.sub)}</div></div>
         ${info}
         <div class="card-acts">${act}</div>`;
       grid.appendChild(card);
@@ -923,7 +953,7 @@ function renderAdmUsers(users){
       actions='<span style="font-size:.71rem;color:var(--gray-tx);">—</span>';
     }
     return `<div class="user-row">
-      <span class="ue">${email}</span>
+      <span class="ue">${s(email)}</span>
       <span class="urole ${role}">${roleLabel}</span>
       <div style="display:flex;gap:.3rem;flex-shrink:0;">${actions}</div>
     </div>`;
@@ -966,7 +996,7 @@ function renderAdmCatsList(){
   if(!entries.length){el.innerHTML='<p class="empty">カテゴリがありません</p>';return;}
   el.innerHTML=entries.map(([k,v])=>`
     <div class="cat-row">
-      <span class="cat-row-name">${v.name}</span>
+      <span class="cat-row-name">${s(v.name)}</span>
       <button class="btn btn-danger" style="padding:4px 10px;font-size:.71rem;" onclick="deleteCat('${k}')">削除</button>
     </div>`).join('');
 }
@@ -995,8 +1025,8 @@ function renderAdmBooksList(){
     const isBw=b.status==='borrowed';
     return `<div class="bk-row">
       <div class="bk-row-info">
-        <div class="bk-row-title">${b.title}</div>
-        <div class="bk-row-sub">${b.sub||'—'}</div>
+        <div class="bk-row-title">${s(b.title)}</div>
+        <div class="bk-row-sub">${s(b.sub)}</div>
       </div>
       <span class="bk-row-cat">${catName}</span>
       <div class="bk-row-acts">
@@ -1048,9 +1078,9 @@ function renderAdmBorrows(){
   el.innerHTML=bw.map(([id,b])=>{
     const od=isOD(b.returnDate);
     return `<div class="bo-row${od?' od':''}">
-      <div class="bo-book">${b.title}</div>
+      <div class="bo-book">${s(b.title)}</div>
       <div class="bo-meta">
-        <span>👤 ${b.borrowerRealName||b.borrowerNickname||'—'}（${b.borrowerNickname||'—'}）</span>
+        <span>👤 ${s(b.borrowerRealName||b.borrowerNickname)}（${s(b.borrowerNickname)}）</span>
         <span>📅 ${fmt(b.returnDate)}${od?' ⚠️ 延滞':''}</span>
       </div>
       <div style="margin-top:.4rem;">
@@ -1083,8 +1113,8 @@ function renderAdmPendingReports(prs){
   el.innerHTML=entries.map(([k,v])=>`
     <div class="pr-row">
       <div class="pr-info">
-        <div class="pr-email">${v.borrowerRealName||dkey(k)}</div>
-        <div class="pr-book">📚 ${v.bookTitle||'—'} ｜ 返却日：${fmt(v.returnDate)}</div>
+        <div class="pr-email">${s(v.borrowerRealName||dkey(k))}</div>
+        <div class="pr-book">📚 ${s(v.bookTitle)} ｜ 返却日：${fmt(v.returnDate)}</div>
       </div>
     </div>`).join('');
 }
@@ -1094,9 +1124,9 @@ function renderAdmReports(reps){
   if(!entries.length){el.innerHTML='<p class="empty">報告書はまだありません</p>';return;}
   el.innerHTML=entries.map(([,r])=>`
     <div class="rp-row">
-      <div class="rp-hd"><span class="rp-book">${r.bookTitle}</span><span class="rp-dt">提出：${fmt(r.submittedAt)}</span></div>
-      <div class="rp-meta">👤 <strong>${r.borrowerRealName||r.borrowerEmail||'—'}</strong><br>📧 ${r.borrowerEmail} ｜ 📄 ${r.pages}</div>
-      <div class="rp-body">${r.content}</div>
+      <div class="rp-hd"><span class="rp-book">${s(r.bookTitle)}</span><span class="rp-dt">提出：${fmt(r.submittedAt)}</span></div>
+      <div class="rp-meta">👤 <strong>${s(r.borrowerRealName||r.borrowerEmail)}</strong><br>📧 ${s(r.borrowerEmail)} ｜ 📄 ${s(r.pages)}</div>
+      <div class="rp-body">${s(r.content)}</div>
     </div>`).join('');
 }
 
@@ -1107,12 +1137,12 @@ function renderAdmHistory(hist){
   el.innerHTML=entries.map(([,h])=>`
     <div class="rp-row">
       <div class="rp-hd">
-        <span class="rp-book">${h.bookTitle}</span>
+        <span class="rp-book">${s(h.bookTitle)}</span>
         <span class="rp-dt">返却：${fmt(h.returnDate)}</span>
       </div>
       <div class="rp-meta">
-        👤 <strong>${h.borrowerRealName||'—'}</strong>（${h.borrowerNickname||'—'}）<br>
-        📧 ${h.borrowerEmail||'—'}<br>
+        👤 <strong>${s(h.borrowerRealName)}</strong>（${s(h.borrowerNickname)}）<br>
+        📧 ${s(h.borrowerEmail)}<br>
         📅 貸出：${fmt(h.borrowDate)} → 返却：${fmt(h.returnDate)}
         ${h.forcedReturn?'&nbsp;<span style="color:var(--danger-text);font-size:.7rem;font-weight:700;">強制返却</span>':''}
       </div>
