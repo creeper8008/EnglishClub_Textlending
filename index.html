@@ -470,7 +470,7 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
       <div class="asec active" id="asec-users">
         <div class="asec-ttl">登録ユーザー</div>
         <div class="user-list" id="adm-users"></div>
-        <div class="add-box">
+        <div class="add-box" id="add-user-box">
           <h4>➕ ユーザーを追加</h4>
           <div class="add-row">
             <div class="fg"><label>メールアドレス</label>
@@ -480,10 +480,10 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
               <option value="member">メンバー</option>
               <option value="admin">管理者</option>
             </select>
-            <span id="new-role-note" class="hidden" style="font-size:.72rem;color:var(--gray-tx);align-self:flex-end;padding-bottom:.5rem;">※メンバーとして追加</span>
             <button class="btn btn-primary" style="align-self:flex-end;" onclick="addUser()">追加</button>
           </div>
         </div>
+        <p id="user-mgmt-note" class="hidden" style="font-size:.78rem;color:var(--gray-tx);margin-top:.75rem;line-height:1.6;">ユーザーの追加・削除・権限変更はシステム管理者のみ操作できます。</p>
       </div>
 
       <!-- BOOKS -->
@@ -914,12 +914,13 @@ function renderAdmUsers(users){
     let actions='';
     if(isSelf){
       actions='<span style="font-size:.71rem;color:var(--gray-tx);">（自分）</span>';
+    } else if(isSuperAdmin){
+      // スーパー管理者のみ：役割変更＋削除
+      actions=`<button class="btn" style="background:var(--red-pale);color:var(--red-dark);font-size:.71rem;padding:4px 9px;" onclick="toggleRole('${k}','${role}')">${role==='admin'?'→メンバー':'→管理者'}</button>
+        <button class="btn btn-danger" style="padding:4px 9px;font-size:.71rem;" onclick="removeUser('${k}')">削除</button>`;
     } else {
-      // 役割変更ボタン：スーパー管理者のみ
-      const roleBtn=isSuperAdmin
-        ? `<button class="btn" style="background:var(--red-pale);color:var(--red-dark);font-size:.71rem;padding:4px 9px;" onclick="toggleRole('${k}','${role}')">${role==='admin'?'→メンバー':'→管理者'}</button>`
-        : '';
-      actions=`${roleBtn}<button class="btn btn-danger" style="padding:4px 9px;font-size:.71rem;" onclick="removeUser('${k}')">削除</button>`;
+      // 他の管理者：操作不可
+      actions='<span style="font-size:.71rem;color:var(--gray-tx);">—</span>';
     }
     return `<div class="user-row">
       <span class="ue">${email}</span>
@@ -935,14 +936,15 @@ function toggleRole(k,currentRole){
   db.ref('allowedUsers/'+k+'/role').set(newRole);
 }
 function addUser(){
+  if(me.email!==SUPERADMIN){alert('ユーザーの追加はk24066のみ操作できます。');return;}
   const email=document.getElementById('new-email').value.trim().toLowerCase();
-  // スーパー管理者以外はメンバーとして追加のみ
-  const role=me.email===SUPERADMIN?document.getElementById('new-role').value:'member';
+  const role=document.getElementById('new-role').value;
   if(!email||!email.includes('@')){alert('有効なメールアドレスを入力してください。');return;}
   db.ref('allowedUsers/'+ekey(email)).set({role,addedAt:Date.now()});
   document.getElementById('new-email').value='';
 }
 function removeUser(k){
+  if(me.email!==SUPERADMIN){alert('ユーザーの削除はk24066のみ操作できます。');return;}
   if(!confirm(`${dkey(k)} を削除しますか？`))return;
   db.ref('allowedUsers/'+k).remove();
 }
@@ -1153,15 +1155,18 @@ function saveMaintMsg(){
   alert('メッセージを更新しました。');
 }
 
-// スーパー管理者以外は役割選択を非表示
-(function initRoleSelect(){
+// スーパー管理者以外はユーザー管理UIを非表示
+(function initUserMgmt(){
   const check=setInterval(()=>{
     if(!me) return;
     clearInterval(check);
-    const sel=document.getElementById('new-role');
-    const note=document.getElementById('new-role-note');
-    if(!sel||!note) return;
-    if(me.email!==SUPERADMIN){sel.classList.add('hidden');note.classList.remove('hidden');}
+    const box=document.getElementById('add-user-box');
+    const note=document.getElementById('user-mgmt-note');
+    if(!box||!note) return;
+    if(me.email!==SUPERADMIN){
+      box.classList.add('hidden');
+      note.classList.remove('hidden');
+    }
   },300);
 })();
 </script>
