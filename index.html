@@ -480,6 +480,7 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
               <option value="member">メンバー</option>
               <option value="admin">管理者</option>
             </select>
+            <span id="new-role-note" class="hidden" style="font-size:.72rem;color:var(--gray-tx);align-self:flex-end;padding-bottom:.5rem;">※メンバーとして追加</span>
             <button class="btn btn-primary" style="align-self:flex-end;" onclick="addUser()">追加</button>
           </div>
         </div>
@@ -552,6 +553,11 @@ main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem;}
           <div class="fg">
             <label>ユーザーへのメッセージ（任意）</label>
             <input type="text" id="maint-msg-input" placeholder="例：本日は緊急のため停止しています。">
+            <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem;">
+              <button class="btn btn-ghost" style="font-size:.7rem;padding:4px 10px;" onclick="insertMaintTpl('emergency')">⚡ 緊急停止</button>
+              <button class="btn btn-ghost" style="font-size:.7rem;padding:4px 10px;" onclick="insertMaintTpl('maintenance')">🔧 メンテナンス</button>
+              <button class="btn btn-ghost" style="font-size:.7rem;padding:4px 10px;" onclick="insertMaintTpl('time')">🕐 現在時刻を挿入</button>
+            </div>
           </div>
           <button class="btn btn-primary" onclick="saveMaintMsg()">メッセージを更新</button>
         </div>
@@ -583,6 +589,23 @@ const firebaseConfig = {
 // =====================================================
 
 const INIT_CATS = ["リスニング","リーディング","問題集","総合対策本"];
+const SUPERADMIN = 'k24066@std.nagaokauniv.ac.jp';
+
+// LINEブラウザ検出
+(function(){
+  const ua=navigator.userAgent||'';
+  if(/Line\//i.test(ua)){
+    document.body.innerHTML=`
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#8C0D21,#B5122B);padding:2rem;">
+        <div style="background:#fff;border-radius:20px;padding:2.5rem 2rem;max-width:380px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.3);">
+          <div style="font-size:2.5rem;margin-bottom:1rem;">🌐</div>
+          <h2 style="font-family:'Noto Sans JP',sans-serif;font-size:1.1rem;color:#8C0D21;margin-bottom:.75rem;font-weight:700;">外部ブラウザで開いてください</h2>
+          <p style="font-size:.85rem;color:#5f5e5a;line-height:1.8;margin-bottom:1.5rem;">LINEのブラウザではGoogleログインが利用できません。<br>右上のメニュー（⋮）→「外部ブラウザで開く」をタップしてください。</p>
+          <div style="background:#f1efe8;border-radius:8px;padding:.75rem 1rem;font-size:.78rem;color:#854f0b;line-height:1.6;">Chrome または Safari で開いてください</div>
+        </div>
+      </div>`;
+  }
+})();
 
 firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(), db=firebase.database();
@@ -687,6 +710,14 @@ function startListeners(){
       if(st){st.textContent=on?'現在：メンテナンス中（停止中）':'現在：通常稼働中';st.className='maint-status '+(on?'on':'off');}
       const mi=document.getElementById('maint-msg-input');
       if(mi&&snap.exists()) mi.value=snap.val().message||'';
+    }
+  });
+  // ユーザー削除リアルタイム検知（一般ユーザー用）
+  db.ref('allowedUsers/'+ekey(me.email)).on('value',snap=>{
+    if(!snap.exists()&&myRole!=='admin'){
+      closeModals();
+      show('screen-unauthorized');
+      document.getElementById('unauth-email').textContent=me.email;
     }
   });
   if(myRole==='admin'){
@@ -844,7 +875,8 @@ function submitReport(){
   if(!content){alert('学習内容と感想を入力してください。');return;}
   db.ref('reports/report_'+Date.now()).set({
     bookId:pending.bookId,bookTitle:pending.bookTitle,
-    borrowerEmail:me.email,borrowDate:pending.borrowDate,returnDate:pending.returnDate,
+    borrowerEmail:me.email,borrowerRealName:me.displayName||me.email,
+    borrowDate:pending.borrowDate,returnDate:pending.returnDate,
     pages,content,submittedAt:today()
   });
   db.ref('pendingReports/'+ekey(me.email)).remove();
@@ -874,19 +906,38 @@ function renderAdmUsers(users){
   const el=document.getElementById('adm-users');
   const entries=Object.entries(users);
   if(!entries.length){el.innerHTML='<p class="empty">登録ユーザーがいません</p>';return;}
+  const isSuperAdmin=me.email===SUPERADMIN;
   el.innerHTML=entries.map(([k,v])=>{
     const email=dkey(k),isSelf=email===me.email;
+    const role=v.role||'member';
+    const roleLabel=role==='admin'?'管理者':'メンバー';
+    let actions='';
+    if(isSelf){
+      actions='<span style="font-size:.71rem;color:var(--gray-tx);">（自分）</span>';
+    } else {
+      // 役割変更ボタン：スーパー管理者のみ
+      const roleBtn=isSuperAdmin
+        ? `<button class="btn" style="background:var(--red-pale);color:var(--red-dark);font-size:.71rem;padding:4px 9px;" onclick="toggleRole('${k}','${role}')">${role==='admin'?'→メンバー':'→管理者'}</button>`
+        : '';
+      actions=`${roleBtn}<button class="btn btn-danger" style="padding:4px 9px;font-size:.71rem;" onclick="removeUser('${k}')">削除</button>`;
+    }
     return `<div class="user-row">
       <span class="ue">${email}</span>
-      <span class="urole ${v.role||'member'}">${v.role==='admin'?'管理者':'メンバー'}</span>
-      ${isSelf?'<span style="font-size:.71rem;color:var(--gray-tx);">（自分）</span>'
-        :`<button class="btn btn-danger" style="padding:4px 10px;font-size:.71rem;" onclick="removeUser('${k}')">削除</button>`}
+      <span class="urole ${role}">${roleLabel}</span>
+      <div style="display:flex;gap:.3rem;flex-shrink:0;">${actions}</div>
     </div>`;
   }).join('');
 }
+function toggleRole(k,currentRole){
+  const newRole=currentRole==='admin'?'member':'admin';
+  const email=dkey(k);
+  if(!confirm(`${email} の役割を「${newRole==='admin'?'管理者':'メンバー'}」に変更しますか？`))return;
+  db.ref('allowedUsers/'+k+'/role').set(newRole);
+}
 function addUser(){
   const email=document.getElementById('new-email').value.trim().toLowerCase();
-  const role=document.getElementById('new-role').value;
+  // スーパー管理者以外はメンバーとして追加のみ
+  const role=me.email===SUPERADMIN?document.getElementById('new-role').value:'member';
   if(!email||!email.includes('@')){alert('有効なメールアドレスを入力してください。');return;}
   db.ref('allowedUsers/'+ekey(email)).set({role,addedAt:Date.now()});
   document.getElementById('new-email').value='';
@@ -1042,7 +1093,7 @@ function renderAdmReports(reps){
   el.innerHTML=entries.map(([,r])=>`
     <div class="rp-row">
       <div class="rp-hd"><span class="rp-book">${r.bookTitle}</span><span class="rp-dt">提出：${fmt(r.submittedAt)}</span></div>
-      <div class="rp-meta">📧 ${r.borrowerEmail} ｜ 📄 ${r.pages}</div>
+      <div class="rp-meta">👤 <strong>${r.borrowerRealName||r.borrowerEmail||'—'}</strong><br>📧 ${r.borrowerEmail} ｜ 📄 ${r.pages}</div>
       <div class="rp-body">${r.content}</div>
     </div>`).join('');
 }
@@ -1067,6 +1118,29 @@ function renderAdmHistory(hist){
 }
 
 /* ── Maintenance ── */
+function nowJST(){
+  const d=new Date();
+  const jst=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Tokyo'}));
+  const mm=String(jst.getMonth()+1).padStart(2,'0');
+  const dd=String(jst.getDate()).padStart(2,'0');
+  const hh=String(jst.getHours()).padStart(2,'0');
+  const mi=String(jst.getMinutes()).padStart(2,'0');
+  return `${mm}月${dd}日 ${hh}:${mi}`;
+}
+function insertMaintTpl(type){
+  const el=document.getElementById('maint-msg-input');
+  const t=nowJST();
+  const tpls={
+    emergency:`緊急対応のため一時停止しています。【停止開始：${t}】`,
+    maintenance:`システムメンテナンス中です。しばらくお待ちください。【開始：${t}】`,
+    time:t
+  };
+  if(type==='time'){
+    el.value=el.value+t;
+  } else {
+    el.value=tpls[type]||'';
+  }
+}
 function toggleMaintenance(){
   const on=document.getElementById('maint-toggle').checked;
   const msg=document.getElementById('maint-msg-input').value.trim();
@@ -1078,6 +1152,18 @@ function saveMaintMsg(){
   db.ref('system/maintenance').set({enabled:on,message:msg});
   alert('メッセージを更新しました。');
 }
+
+// スーパー管理者以外は役割選択を非表示
+(function initRoleSelect(){
+  const check=setInterval(()=>{
+    if(!me) return;
+    clearInterval(check);
+    const sel=document.getElementById('new-role');
+    const note=document.getElementById('new-role-note');
+    if(!sel||!note) return;
+    if(me.email!==SUPERADMIN){sel.classList.add('hidden');note.classList.remove('hidden');}
+  },300);
+})();
 </script>
 </body>
 </html>
