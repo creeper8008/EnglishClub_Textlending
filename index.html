@@ -6,6 +6,7 @@
 <title>英語サークル｜教科書貸出管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Outfit:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <style>
@@ -619,6 +620,14 @@ const SUPERADMIN = 'k24066@std.nagaokauniv.ac.jp';
 })();
 
 firebase.initializeApp(firebaseConfig);
+
+// Firebase App Check (reCAPTCHA v3)
+// Replace YOUR_RECAPTCHA_SITE_KEY with your actual site key
+const appCheck = firebase.appCheck();
+appCheck.activate(
+  new firebase.appCheck.ReCaptchaV3Provider('6Leba-ssAAAAAJ8a9JMmlRsqNux0oyldzA5jaUht'),
+  true
+);
 
 const auth=firebase.auth(), db=firebase.database();
 let me=null, myRole=null, books={}, cats={}, pending=null, curId=null, retTitle='', editBkId=null;
