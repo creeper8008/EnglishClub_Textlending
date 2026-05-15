@@ -684,6 +684,8 @@ function renderUser(){
   if(me.photoURL) av.innerHTML=`<img src="${me.photoURL}" alt="">`;
   else av.textContent=(me.displayName||me.email||'?')[0].toUpperCase();
   document.getElementById('unm').textContent=me.displayName||me.email.split('@')[0];
+  // UIDをallowedUsersに記録（admin昇格時に使用）
+  db.ref('allowedUsers/'+ekey(me.email)+'/uid').set(me.uid);
   if(myRole==='admin'){
     document.getElementById('btn-admin').classList.remove('hidden');
     db.ref('admins/'+me.uid).set(true);
@@ -946,6 +948,13 @@ function toggleRole(k,currentRole){
   const email=dkey(k);
   if(!confirm(`${email} の役割を「${newRole==='admin'?'管理者':'メンバー'}」に変更しますか？`))return;
   db.ref('allowedUsers/'+k+'/role').set(newRole);
+  // adminsノードも同期更新
+  db.ref('allowedUsers/'+k+'/uid').once('value').then(snap=>{
+    const uid=snap.val();
+    if(!uid) return;
+    if(newRole==='admin') db.ref('admins/'+uid).set(true);
+    else db.ref('admins/'+uid).remove();
+  });
 }
 function addUser(){
   if(me.email!==SUPERADMIN){alert('ユーザーの追加はk24066のみ操作できます。');return;}
